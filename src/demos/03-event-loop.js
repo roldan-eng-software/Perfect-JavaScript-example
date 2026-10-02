@@ -11,11 +11,40 @@
  *   o cleanup cancela timers/rAF pendentes e ignora callbacks tardios.
  */
 import { h } from '../core/dom.js';
+import { tr } from '../core/i18n.js';
 
 /** Máximo prático de entradas na lista — ao chegar perto, ela reinicia. */
 const LIMITE_ENTRADAS = 15;
 /** Entradas produzidas por cada clique em "Executar sequência". */
 const ENTRADAS_POR_EXECUCAO = 6;
+
+/** Dicionário de strings da demo — tr() lê o idioma ativo em tempo de render. */
+const STRINGS = {
+  'en-US': {
+    'panel.title': 'Execution order: microtasks × macrotasks',
+    'btn.run': 'Run sequence',
+    'entries.label': 'entries: ',
+    'list.item': '{ordem}. [{categoria}] {rotulo}',
+    'label.sync': 'synchronous code from the click',
+    'label.nested': 'nested microtask (created inside the then)',
+    'note.scheduling':
+      'Scheduling order: sync → Promise.then → queueMicrotask → setTimeout → rAF. EXECUTION order (the list): sync → microtasks (then → queueMicrotask → nested) → setTimeout → rAF.',
+    'note.limit':
+      'Microtasks drain the stack before any task; the list restarts after {limite} entries.',
+  },
+  'pt-BR': {
+    'panel.title': 'Ordem de execução: microtasks × macrotasks',
+    'btn.run': 'Executar sequência',
+    'entries.label': 'entradas: ',
+    'list.item': '{ordem}º [{categoria}] {rotulo}',
+    'label.sync': 'código síncrono do clique',
+    'label.nested': 'microtask aninhada (criada dentro do then)',
+    'note.scheduling':
+      'Ordem de AGENDAMENTO: sync → Promise.then → queueMicrotask → setTimeout → rAF. Ordem de EXECUÇÃO (a lista): sync → microtasks (then → queueMicrotask → aninhada) → setTimeout → rAF.',
+    'note.limit':
+      'Microtasks esvaziam a pilha antes de qualquer tarefa; a lista reinicia ao passar de {limite} entradas.',
+  },
+};
 
 /**
  * Inicializa a demo visual da event loop.
@@ -52,7 +81,7 @@ export function init(container) {
     if (!ativo) return; // callback tardio pós-cleanup: não escreve no DOM
     ordem += 1;
     // textContent puro: rótulo + categoria + número de ordem numa única string
-    lista.append(h('li', { text: `${ordem}º [${categoria}] ${rotulo}` }));
+    lista.append(h('li', { text: tr(STRINGS, 'list.item', { ordem, categoria, rotulo }) }));
     contador.textContent = `${lista.childElementCount}/${LIMITE_ENTRADAS}`;
   }
 
@@ -72,7 +101,7 @@ export function init(container) {
     }
 
     // 1) SYNC: roda imediatamente dentro desta própria tarefa (mesmo stack).
-    registrar('código síncrono do clique', 'sync');
+    registrar(tr(STRINGS, 'label.sync'), 'sync');
 
     // 2) MICROTASK via Promise.then: enfileirada agora, esvazia ANTES de qualquer
     //    timer — a promise já resolvida não "pula" a fila, só muda de fila.
@@ -80,7 +109,7 @@ export function init(container) {
       registrar('Promise.then → callback', 'microtask');
       // 4) MICROTASK ANINHADA: nascida dentro de outra microtask, ela entra no
       //    FIM da fila já em execução e roda ainda nesta drenagem de microtasks.
-      queueMicrotask(() => registrar('microtask aninhada (criada dentro do then)', 'microtask'));
+      queueMicrotask(() => registrar(tr(STRINGS, 'label.nested'), 'microtask'));
     });
 
     // 3) MICROTASK via queueMicrotask: mesma fila do Promise.then, FIFO —
@@ -107,27 +136,26 @@ export function init(container) {
   const painel = h(
     'div',
     { class: 'linha' },
-    h('h3', { text: 'Ordem de execução: microtasks × macrotasks' }),
+    h('h3', { text: tr(STRINGS, 'panel.title') }),
     h(
       'div',
       { class: 'botoes' },
-      h('button', { type: 'button', text: 'Executar sequência', on: { click: executarSequencia } }),
-      h('span', { class: 'nota', text: 'entradas: ' }),
+      h('button', {
+        type: 'button',
+        text: tr(STRINGS, 'btn.run'),
+        on: { click: executarSequencia },
+      }),
+      h('span', { class: 'nota', text: tr(STRINGS, 'entries.label') }),
       contador,
     ),
     lista,
     h('p', {
       class: 'nota',
-      text:
-        'Ordem de AGENDAMENTO: sync → Promise.then → queueMicrotask → setTimeout → rAF. ' +
-        'Ordem de EXECUÇÃO (a lista): sync → microtasks (then → queueMicrotask → aninhada) ' +
-        '→ setTimeout → rAF.',
+      text: tr(STRINGS, 'note.scheduling'),
     }),
     h('p', {
       class: 'nota',
-      text:
-        'Microtasks esvaziam a pilha antes de qualquer tarefa; a lista reinicia ao passar de ' +
-        `${LIMITE_ENTRADAS} entradas.`,
+      text: tr(STRINGS, 'note.limit', { limite: LIMITE_ENTRADAS }),
     }),
   );
 

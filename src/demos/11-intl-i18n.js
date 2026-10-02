@@ -11,6 +11,7 @@
  *   cleanup remove os listeners criados com on().
  */
 import { h, on } from '../core/dom.js';
+import { tr } from '../core/i18n.js';
 import {
   formatNumber,
   formatDate,
@@ -19,6 +20,52 @@ import {
   pluralize,
   collate,
 } from '../utils/format.js';
+
+/**
+ * Textos de interface (chrome) da demo: títulos, rótulos e mensagens de status.
+ * Os selects de locale e as amostras formatadas são CONTEÚDO da demo Intl —
+ * continuam variando pelo locale escolhido no próprio painel.
+ */
+const STRINGS = {
+  'en-US': {
+    fallback: '{nome} unavailable in this browser — reduced demo.',
+    'aria.number': 'Number to format',
+    'aria.datetime': 'Date and time to format',
+    'select.style': 'style',
+    'select.format': 'format',
+    'label.number': 'number: ',
+    'label.result': 'result: ',
+    'label.date': 'date: ',
+    'label.formatted': 'formatted: ',
+    'label.relative': 'relative: ',
+    'err.number': '— (enter a valid number)',
+    'err.date': 'invalid date',
+    'out.compact': '{principal} · compact: {compacto}',
+    'out.error': 'error: {erro}',
+    intro:
+      'Intl is the native internationalization API: the linguistic (ICU) data already ' +
+      'ships with the browser — i18n with zero dependencies.',
+  },
+  'pt-BR': {
+    fallback: '{nome} indisponível neste navegador — demo reduzida.',
+    'aria.number': 'Número a formatar',
+    'aria.datetime': 'Data e hora a formatar',
+    'select.style': 'estilo',
+    'select.format': 'formato',
+    'label.number': 'número: ',
+    'label.result': 'resultado: ',
+    'label.date': 'data: ',
+    'label.formatted': 'formatado: ',
+    'label.relative': 'relativo: ',
+    'err.number': '— (informe um número válido)',
+    'err.date': 'data inválida',
+    'out.compact': '{principal} · compacto: {compacto}',
+    'out.error': 'erro: {erro}',
+    intro:
+      'Intl é a API nativa de internacionalização: os dados linguísticos (ICU) já ' +
+      'vêm no navegador — i18n com zero dependências.',
+  },
+};
 
 /** Moeda padrão por locale (BCP-47 → código ISO 4217). */
 const MOEDAS = /** @type {Record<string, string>} */ ({
@@ -70,7 +117,7 @@ export function init(container) {
 
   /** Nota de fallback exibida quando o navegador não suporta uma sub-API. */
   function semSuporte(nome) {
-    return h('p', { class: 'nota', text: `${nome} indisponível neste navegador — demo reduzida.` });
+    return h('p', { class: 'nota', text: tr(STRINGS, 'fallback', { nome }) });
   }
 
   // ── 1. Intl.NumberFormat: moeda/decimal/percentual + notation compact ──────
@@ -80,16 +127,16 @@ export function init(container) {
       type: 'number',
       step: 'any',
       value: '1234567.89',
-      'aria-label': 'Número a formatar',
+      'aria-label': tr(STRINGS, 'aria.number'),
     });
     const selLocale = criarSelect('locale', ['pt-BR', 'en-US', 'de-DE', 'ja-JP']);
-    const selEstilo = criarSelect('estilo', ['decimal', 'currency', 'percent']);
+    const selEstilo = criarSelect(tr(STRINGS, 'select.style'), ['decimal', 'currency', 'percent']);
     const saida = h('output', { 'aria-live': 'polite' });
 
     function atualizarNumero() {
       const valor = Number(entrada.value);
       if (!Number.isFinite(valor)) {
-        saida.textContent = '— (informe um número válido)';
+        saida.textContent = tr(STRINGS, 'err.number');
         return;
       }
       const locale = selLocale.campo.value;
@@ -106,9 +153,11 @@ export function init(container) {
           notation: 'compact',
           maximumFractionDigits: 1,
         }).format(valor);
-        saida.textContent = `${principal} · compacto: ${compacto}`;
+        saida.textContent = tr(STRINGS, 'out.compact', { principal, compacto });
       } catch (erro) {
-        saida.textContent = `erro: ${erro instanceof Error ? erro.message : String(erro)}`;
+        saida.textContent = tr(STRINGS, 'out.error', {
+          erro: erro instanceof Error ? erro.message : String(erro),
+        });
       }
     }
 
@@ -123,11 +172,11 @@ export function init(container) {
       h(
         'div',
         { class: 'botoes' },
-        h('label', { class: 'nota' }, 'número: ', entrada),
+        h('label', { class: 'nota' }, tr(STRINGS, 'label.number'), entrada),
         selLocale.raiz,
         selEstilo.raiz,
       ),
-      h('p', { class: 'nota' }, 'resultado: ', saida),
+      h('p', { class: 'nota' }, tr(STRINGS, 'label.result'), saida),
     );
   } else {
     painelNumeros.append(semSuporte('Intl.NumberFormat'));
@@ -143,17 +192,17 @@ export function init(container) {
     const entradaData = h('input', {
       type: 'datetime-local',
       value: '2026-10-02T15:45',
-      'aria-label': 'Data e hora a formatar',
+      'aria-label': tr(STRINGS, 'aria.datetime'),
     });
     const selLocaleData = criarSelect('locale', ['pt-BR', 'en-US', 'ja-JP']);
-    const selFormato = criarSelect('formato', ['datetime', 'date', 'time']);
+    const selFormato = criarSelect(tr(STRINGS, 'select.format'), ['datetime', 'date', 'time']);
     const selZona = criarSelect('timeZone', ['America/Sao_Paulo', 'UTC', 'Asia/Tokyo']);
     const saidaData = h('output', { 'aria-live': 'polite' });
 
     function atualizarData() {
       const data = new Date(entradaData.value);
       if (Number.isNaN(data.getTime())) {
-        saidaData.textContent = 'data inválida';
+        saidaData.textContent = tr(STRINGS, 'err.date');
         return;
       }
       // timeZone demonstra que a MESMA data renderiza diferente conforme o fuso
@@ -176,12 +225,12 @@ export function init(container) {
       h(
         'div',
         { class: 'botoes' },
-        h('label', { class: 'nota' }, 'data: ', entradaData),
+        h('label', { class: 'nota' }, tr(STRINGS, 'label.date'), entradaData),
         selLocaleData.raiz,
         selFormato.raiz,
         selZona.raiz,
       ),
-      h('p', { class: 'nota' }, 'formatado: ', saidaData),
+      h('p', { class: 'nota' }, tr(STRINGS, 'label.formatted'), saidaData),
     );
   } else {
     painelDatas.append(semSuporte('Intl.DateTimeFormat'));
@@ -209,7 +258,7 @@ export function init(container) {
     if (primeiroSelect) remocoes.push(on(primeiroSelect, 'change', atualizarRelativa));
     atualizarRelativa();
 
-    painelDatas.append(h('p', { class: 'nota' }, 'relativo: ', saidaRelativa));
+    painelDatas.append(h('p', { class: 'nota' }, tr(STRINGS, 'label.relative'), saidaRelativa));
   }
 
   // ── 3. ListFormat + PluralRules + Collator ──────────────────────────────────
@@ -262,12 +311,7 @@ export function init(container) {
   const painelIntro = h(
     'div',
     { class: 'linha' },
-    h('p', {
-      class: 'nota',
-      text:
-        'Intl é a API nativa de internacionalização: os dados linguísticos (ICU) já ' +
-        'vêm no navegador — i18n com zero dependências.',
-    }),
+    h('p', { class: 'nota', text: tr(STRINGS, 'intro') }),
   );
 
   container.append(painelIntro, painelNumeros, painelDatas, painelTextos);

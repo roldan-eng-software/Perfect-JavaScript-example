@@ -6,8 +6,16 @@ Guia para assistentes de código (e revisores humanos) que trabalham neste repos
 
 Portfólio técnico: landing page interativa em **JavaScript puro** (ES2023+),
 HTML semântico e CSS enxuto. **Zero dependências de runtime, zero build.**
-Conteúdo visível e comentários em **português do Brasil**; identificadores em
-**inglês**.
+
+**Idiomas:** a landing exibe **en-US por padrão** com botão no topo para
+alternar para **pt-BR** (persistido via `storage.js`). Strings de UI vão para
+o dicionário `SHELL` (`src/core/i18n.js`) com atributos `data-i18n` /
+`data-i18n-html` / `data-i18n-attr`, ou para um `STRINGS` local da demo usada
+com `tr(STRINGS, chave)`. Comentários, JSDoc e README permanecem em
+**português do Brasil**; identificadores em **inglês**.
+
+**Tema:** claro é o **padrão prioritário**; escuro e "do sistema" são opt-in
+do visitante (`theme-toggle` cicla light → dark → system, salvo em storage).
 
 ## Comandos
 

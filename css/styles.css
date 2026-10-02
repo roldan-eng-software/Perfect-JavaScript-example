@@ -46,9 +46,18 @@
   --sombra: 0 1px 3px rgb(0 0 0 / 0.5);
 }
 
-/* Respeita quem prefere escuro no SO, sem escolha manual */
+/*
+ * Tema escuro: SOMENTE por escolha explícita do visitante.
+ * Prioridade: claro é o padrão; escuro/sistema são opt-in via theme-toggle.
+ * - data-tema='dark'  → escolha manual de escuro
+ * - data-tema='system' → visitante pediu "do sistema" (segue o SO)
+ * Nunca aplicamos escuro automático só porque o SO está escuro.
+ */
+:root[data-tema='system'] {
+  color-scheme: light dark;
+}
 @media (prefers-color-scheme: dark) {
-  :root:not([data-tema='light']) {
+  :root[data-tema='system'] {
     --cor-fundo: #0d1117;
     --cor-superficie: #161b22;
     --cor-texto: #e6edf3;
@@ -62,6 +71,34 @@
     --cor-fundo-codigo: #0d1117;
     --cor-cabecalho: #161b22;
     --sombra: 0 1px 3px rgb(0 0 0 / 0.5);
+  }
+}
+
+/* Cores do realce de sintaxe do <code-peek> (herdadas via variáveis) */
+:root {
+  --tk-comentario: #6e7781;
+  --tk-string: #0a3069;
+  --tk-numero: #0550ae;
+  --tk-palavra: #cf222e;
+  --tk-operador: #0550ae;
+  --tk-ident: #1f2328;
+}
+:root[data-tema='dark'] {
+  --tk-comentario: #8b949e;
+  --tk-string: #a5d6ff;
+  --tk-numero: #79c0ff;
+  --tk-palavra: #ff7b72;
+  --tk-operador: #79c0ff;
+  --tk-ident: #e6edf3;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-tema='system'] {
+    --tk-comentario: #8b949e;
+    --tk-string: #a5d6ff;
+    --tk-numero: #79c0ff;
+    --tk-palavra: #ff7b72;
+    --tk-operador: #79c0ff;
+    --tk-ident: #e6edf3;
   }
 }
 
@@ -177,6 +214,24 @@ a {
   border: 1px solid var(--cor-borda);
   border-radius: 6px;
   cursor: pointer;
+}
+
+/* Botão de idioma (en-US ↔ pt-BR) no topo */
+.botao-idioma {
+  font: 600 0.8rem/1 var(--fonte-corpo);
+  padding: 0.45rem 0.7rem;
+  border-radius: 999px;
+  cursor: pointer;
+  background: var(--cor-acento-fundo);
+  color: var(--cor-acento);
+  border: 1px solid var(--cor-borda);
+}
+.botao-idioma:hover {
+  border-color: var(--cor-acento);
+}
+.botao-idioma:focus-visible {
+  outline: 2px solid var(--cor-foco);
+  outline-offset: 2px;
 }
 
 .menu {

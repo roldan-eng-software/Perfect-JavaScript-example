@@ -1,32 +1,50 @@
 // @ts-check
 /**
  * ARQUIVO: theme-toggle.js
- * PROPÓSITO: botão que alterna tema claro/escuro com persistência e sync entre abas.
- * CONCEITOS DEMONSTRADOS: Custom Elements, matchMedia (preferência do sistema),
- *   storage.js (persistência), BroadcastChannel (sync entre abas), dataset.
- * USADO EM: header da landing (seção Hero).
- * COMPLEXIDADE/OBSERVAÇÕES: aplica `data-tema` no <html> para o CSS global
- *   reagir via atributo — Shadow DOM dos outros componentes lê as mesmas variáveis.
+ * PROPÓSITO: controle de tema com prioridade no CLARO — visitante escolhe entre
+ *   Light (padrão), Dark e System; persiste e sincroniza entre abas.
+ * CONCEITOS DEMONSTRADOS: Custom Elements, matchMedia (modo sistema), storage.js
+ *   (persistência), BroadcastChannel (sync entre abas), dataset, aria-pressed.
+ * USADO EM: header da landing (topo).
+ * COMPLEXIDADE/OBSERVAÇÕES: `data-tema` no <html> aceita 'light' | 'dark' |
+ *   'system'. ClarO é o default SEMPRE — escuro só por escolha explícita;
+ *   'system' só escurece quando o SO estiver escuro (CSS via media query).
  */
 
 import { createStorage } from '../core/storage.js';
+import { onLangChange, SHELL, tr } from '../core/i18n.js';
 
 const storage = createStorage('local', 'tema:');
 
 /** Canais de tema entre abas: o BroadcastChannel entrega só em outras abas. */
 const canal = 'BroadcastChannel' in globalThis ? new BroadcastChannel('tema-troca') : null;
 
+/** Modos válidos, em ordem de ciclo do botão. Light é sempre o default. */
+const MODOS = /** @type {const} */ (['light', 'dark', 'system']);
+
+/** Ícone por modo (rótulo vem do dicionário i18n). */
+const ICONES = {
+  light: '☀️',
+  dark: '🌙',
+  system: '💻',
+};
+
 /**
- * Componente <theme-toggle>.
+ * Componente <theme-toggle>: botão que cicla Light → Dark → System → Light.
  *
- * Fluxo:
- * 1. Prioridade: valor salvo > prefers-color-scheme do sistema > 'light'.
- * 2. Clique alterna, grava no storage e aplica em `document.documentElement.dataset.tema`.
- * 3. Outras abas recebem o evento e aplicam sem salvar de novo (sem loop).
+ * Prioridade de tema: claro é o modo padrão da landing; escuro e sistema são
+ * opções que o visitante escolhe explicitamente. Nada de dark automático só
+ * porque o SO do visitante está escuro.
  */
 export class ThemeToggle extends HTMLElement {
   /** @type {(() => void)|null} remove listener do matchMedia */
   #removerMedia = null;
+
+  /** @type {(() => void)|null} cancela assinatura de mudança de idioma */
+  #removerIdioma = null;
+
+  /** @type {'light'|'dark'|'system'} modo vigente (para re-render no idioma) */
+  #modo = 'light';
 
   connectedCallback() {
     if (!this.shadowRoot) this.attachShadow({ mode: 'open' });
@@ -44,27 +62,26 @@ export class ThemeToggle extends HTMLElement {
           button:focus-visible { outline: 2px solid var(--cor-foco); outline-offset: 2px; }
           .icone { font-size: 1rem; }
         </style>
-        <button type="button" aria-pressed="false">
-          <span class="icone" aria-hidden="true">🌙</span>
-          <span class="rotulo">Escuro</span>
+        <button type="button">
+          <span class="icone" aria-hidden="true">☀️</span>
+          <span class="rotulo">Light</span>
         </button>
       `;
-      this.shadowRoot.querySelector('button')?.addEventListener('click', () => this.#alternar());
+      this.shadowRoot.querySelector('button')?.addEventListener('click', () => this.#ciclar());
     }
 
-    // 1ª carga: storage → sistema
+    // Default explícito: CLARO. Só sai do claro se houver escolha salva.
     const salvo = storage.get('modo');
-    const sistema = globalThis.matchMedia?.('(prefers-color-scheme: dark)').matches
-      ? 'dark'
-      : 'light';
-    this.#aplicar(salvo ?? sistema, { persistir: false });
+    const modo = MODOS.includes(salvo) ? salvo : 'light';
+    this.#aplicar(modo, { persistir: false });
 
-    // Reage a mudanças do sistema enquanto não houver escolha manual
+    // Modo 'system': reage ao SO enquanto o visitante mantiver essa opção
     const media = globalThis.matchMedia?.('(prefers-color-scheme: dark)');
     if (media) {
-      const aoMudar = (evento) => {
-        if (storage.get('modo') === null) {
-          this.#aplicar(evento.matches ? 'dark' : 'light', { persistir: false });
+      const aoMudar = () => {
+        if (storage.get('modo') === 'system') {
+          // CSS já reage via media query; aqui só garantimos consistência
+          this.#atualizarBotao('system');
         }
       };
       media.addEventListener('change', aoMudar);
@@ -73,42 +90,59 @@ export class ThemeToggle extends HTMLElement {
 
     // Sincroniza entre abas do mesmo navegador
     canal?.addEventListener('message', (evento) => {
-      this.#aplicar(evento.data?.modo, { persistir: false });
+      if (MODOS.includes(evento.data?.modo)) {
+        this.#aplicar(evento.data.modo, { persistir: false });
+      }
     });
+
+    // Rótulos no idioma ativo (padrão en-US)
+    this.#removerIdioma = onLangChange(() => this.#atualizarBotao(this.#modo));
+    this.#atualizarBotao(this.#modo);
   }
 
   disconnectedCallback() {
     this.#removerMedia?.();
     this.#removerMedia = null;
+    this.#removerIdioma?.();
+    this.#removerIdioma = null;
   }
 
-  /** Alterna entre claro e escuro. */
-  #alternar() {
-    const atual = document.documentElement.dataset.tema === 'dark' ? 'light' : 'dark';
-    this.#aplicar(atual, { persistir: true });
-    canal?.postMessage({ modo: atual });
+  /** Cicla Light → Dark → System → Light (padrão: light). */
+  #ciclar() {
+    const atual = storage.get('modo') ?? 'light';
+    const proximo = MODOS[(MODOS.indexOf(atual) + 1) % MODOS.length];
+    this.#aplicar(proximo, { persistir: true });
+    canal?.postMessage({ modo: proximo });
   }
 
   /**
-   * Aplica o tema no documento, atualiza o botão e persiste.
-   * @param {'light'|'dark'} modo tema a aplicar
+   * Aplica o modo no documento, atualiza o botão e persiste.
+   * @param {'light'|'dark'|'system'} modo modo de tema escolhido
    * @param {{ persistir: boolean }} opcoes gravar no storage?
    */
   #aplicar(modo, { persistir }) {
-    if (modo !== 'light' && modo !== 'dark') return;
+    if (!MODOS.includes(modo)) return;
+    this.#modo = modo;
     document.documentElement.dataset.tema = modo;
     if (persistir) storage.set('modo', modo);
+    this.#atualizarBotao(modo);
+  }
 
+  /**
+   * Sincroniza ícone/rótulo/aria do botão com o modo ativo.
+   * @param {'light'|'dark'|'system'} modo modo vigente
+   */
+  #atualizarBotao(modo) {
     const botao = this.shadowRoot?.querySelector('button');
     const icone = this.shadowRoot?.querySelector('.icone');
     const rotulo = this.shadowRoot?.querySelector('.rotulo');
-    const escuro = modo === 'dark';
+    const nome = tr(SHELL, `theme.${modo}`);
     if (botao) {
-      botao.setAttribute('aria-pressed', String(escuro));
-      botao.setAttribute('aria-label', escuro ? 'Ativar tema claro' : 'Ativar tema escuro');
+      botao.setAttribute('aria-label', `Theme: ${nome}. Click to change.`);
+      botao.setAttribute('title', `Theme: ${nome}`);
     }
-    if (icone) icone.textContent = escuro ? '☀️' : '🌙';
-    if (rotulo) rotulo.textContent = escuro ? 'Claro' : 'Escuro';
+    if (icone) icone.textContent = ICONES[modo];
+    if (rotulo) rotulo.textContent = nome;
   }
 }
 

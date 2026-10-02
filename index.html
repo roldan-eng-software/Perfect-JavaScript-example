@@ -4,64 +4,83 @@
   PROPÓSITO: landing page do Perfect-JavaScript-example — seções com demos interativas.
   CONCEITOS DEMONSTRADOS: HTML semântico, acessibilidade WCAG 2.2 AA, ES Modules nativos.
   USADO EM: ponto de entrada da aplicação (GitHub Pages / npm run serve).
+  IDIOMA: conteúdo estático em en-US (default); pt-BR via data-i18n + botão no topo.
 -->
-<html lang="pt-BR">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
-      content="Portfólio técnico interativo demonstrando domínio de JavaScript moderno (ES2023+) com zero dependências de runtime."
+      content="Interactive technical portfolio showing modern JavaScript (ES2023+) mastery with zero runtime dependencies."
     />
     <meta name="color-scheme" content="light dark" />
-    <title>Perfect JavaScript Example — Portfólio técnico interativo</title>
+    <title>Perfect JavaScript Example — Interactive technical portfolio</title>
     <link rel="stylesheet" href="css/styles.css" />
-    <!-- Módulo nativo: sem bundler, sem build. Tema aplicado antes do paint
-         para evitar flash (FOUC) — lê o storage síncrono. -->
+    <!-- Módulo nativo: sem bundler. Tema aplicado antes do paint (evita FOUC).
+         PRIORIDADE: claro é o padrão; escuro/sistema só se o visitante escolheu. -->
     <script>
-      // Aplica tema salvo antes da primeira pintura (evita flash branco no dark)
+      // Aplica tema salvo antes da primeira pintura — default: light
       try {
-        const tema = JSON.parse(localStorage.getItem('pje:tema:modo') ?? 'null');
-        if (tema === 'dark' || tema === 'light') {
-          document.documentElement.dataset.tema = tema;
-        }
+        const modo = JSON.parse(localStorage.getItem('pje:tema:modo') ?? '"light"');
+        const valido = ['light', 'dark', 'system'].includes(modo) ? modo : 'light';
+        document.documentElement.dataset.tema = valido;
       } catch {
-        /* storage bloqueado — segue o prefers-color-scheme do CSS */
+        /* storage bloqueado — fica no padrão claro */
+      }
+      // Idioma salvo: se pt-BR, marca o <html> antes do módulo principal aplicar
+      try {
+        const lang = JSON.parse(localStorage.getItem('pje:i18n:lang') ?? '"en-US"');
+        if (lang === 'pt-BR') document.documentElement.lang = 'pt-BR';
+      } catch {
+        /* default en-US */
       }
     </script>
   </head>
   <body>
-    <a class="pular-conteudo" href="#conteudo">Pular para o conteúdo</a>
+    <a class="pular-conteudo" href="#conteudo" data-i18n="skip">Skip to content</a>
 
     <header class="topo">
-      <nav aria-label="Navegação principal">
+      <nav aria-label="Main navigation" data-i18n-attr="aria-label:nav.aria">
         <a class="marca" href="#hero">JS<span> Showcase</span></a>
         <button
           type="button"
           class="botao-menu"
           aria-expanded="false"
           aria-controls="menu-principal"
-          aria-label="Abrir menu"
+          aria-label="Open menu"
+          data-i18n-attr="aria-label:menu.open"
         >
           ☰
         </button>
         <ul id="menu-principal" class="menu">
-          <li><a href="#demo01">01 · Closures</a></li>
-          <li><a href="#demo02">02 · Assíncrono</a></li>
-          <li><a href="#demo03">03 · Event loop</a></li>
-          <li><a href="#demo04">04 · Observers</a></li>
-          <li><a href="#demo05">05 · Estado</a></li>
-          <li><a href="#demo06">06 · Classes</a></li>
-          <li><a href="#demo07">07 · Geradores</a></li>
-          <li><a href="#demo08">08 · Worker</a></li>
-          <li><a href="#demo09">09 · Formulários</a></li>
-          <li><a href="#demo10">10 · Drag &amp; Drop</a></li>
-          <li><a href="#demo11">11 · i18n</a></li>
-          <li><a href="#demo12">12 · Performance</a></li>
-          <li><a href="#demo13">13 · APIs</a></li>
-          <li><a href="#testes">Testes</a></li>
-          <li><a href="#como-foi-feito">Como foi feito</a></li>
+          <li><a href="#demo01" data-i18n="nav.d01">01 · Closures</a></li>
+          <li><a href="#demo02" data-i18n="nav.d02">02 · Async</a></li>
+          <li><a href="#demo03" data-i18n="nav.d03">03 · Event loop</a></li>
+          <li><a href="#demo04" data-i18n="nav.d04">04 · Observers</a></li>
+          <li><a href="#demo05" data-i18n="nav.d05">05 · State</a></li>
+          <li><a href="#demo06" data-i18n="nav.d06">06 · Classes</a></li>
+          <li><a href="#demo07" data-i18n="nav.d07">07 · Generators</a></li>
+          <li><a href="#demo08" data-i18n="nav.d08">08 · Worker</a></li>
+          <li><a href="#demo09" data-i18n="nav.d09">09 · Forms</a></li>
+          <li><a href="#demo10" data-i18n="nav.d10">10 · Drag &amp; Drop</a></li>
+          <li><a href="#demo11" data-i18n="nav.d11">11 · i18n</a></li>
+          <li><a href="#demo12" data-i18n="nav.d12">12 · Performance</a></li>
+          <li><a href="#demo13" data-i18n="nav.d13">13 · APIs</a></li>
+          <li><a href="#testes" data-i18n="nav.tests">Tests</a></li>
+          <li><a href="#como-foi-feito" data-i18n="nav.how">How it was built</a></li>
         </ul>
+        <!-- Botão de idioma: alterna en-US ↔ pt-BR, persistido via storage -->
+        <button
+          type="button"
+          class="botao-idioma"
+          id="btn-idioma"
+          data-i18n="lang.button"
+          data-i18n-attr="aria-label:lang.aria"
+          aria-label="Switch language to Portuguese"
+        >
+          Português
+        </button>
         <theme-toggle></theme-toggle>
       </nav>
     </header>
@@ -70,22 +89,22 @@
       <!-- ═══════════════ HERO ═══════════════ -->
       <section id="hero" class="hero" aria-labelledby="titulo-hero">
         <h1 id="titulo-hero">Perfect JavaScript Example</h1>
-        <p class="hero-lead">
-          Portfólio técnico <strong>sem frameworks, sem bibliotecas, sem build</strong>: apenas
-          JavaScript moderno (ES2023+), HTML semântico e CSS enxuto. Cada seção abaixo é uma
-          demonstração <em>real</em> — e mostra o código-fonte que a implementa.
+        <p class="hero-lead" data-i18n-html="hero.lead">
+          Technical portfolio <strong>with no frameworks, no libraries, no build step</strong>: just
+          modern JavaScript (ES2023+), semantic HTML and lean CSS. Every section below is a
+          <em>real</em> demo — and shows the source code that implements it.
         </p>
         <p class="hero-meta">
-          <span class="selo">Zero dependências de runtime</span>
-          <span class="selo">ES Modules nativos</span>
-          <span class="selo">Testes com <code>node:test</code></span>
+          <span class="selo" data-i18n="hero.badge1">Zero runtime dependencies</span>
+          <span class="selo" data-i18n="hero.badge2">Native ES Modules</span>
+          <span class="selo" data-i18n-html="hero.badge3">Tests with <code>node:test</code></span>
         </p>
         <p class="hero-contador">
-          Módulos carregados:
+          <span data-i18n="hero.counter">Modules loaded:</span>
           <output id="contador-modulos" aria-live="polite">1</output>
         </p>
         <p>
-          <a class="botao primario" href="#demo01">Ver demonstrações ↓</a>
+          <a class="botao primario" href="#demo01" data-i18n="hero.cta">See the demos ↓</a>
         </p>
       </section>
 
@@ -93,17 +112,20 @@
       <demo-card
         id="demo01"
         number="01"
-        title="Closures e funções de ordem superior"
+        title="Closures and higher-order functions"
+        data-i18n-attr="title:demo01.title"
         code="https://github.com/roldan-eng-software/Perfect-JavaScript-example/blob/main/src/demos/01-closures-hof.js"
         data-demo="01-closures-hof"
       >
-        Closure é uma função que mantém acesso ao escopo onde foi criada, mesmo depois de esse
-        escopo sair da pilha — aqui um contador vive dentro de
-        <code>criarContador()</code> sem variável global. Usei closures porque encapsulam estado sem
-        classes; compose/pipe/curry compõem lógica pura; memoize cacheia resultados e a comparação
-        usa <code>performance.now()</code>.
+        <span data-i18n-html="demo01.intro"
+          >A closure is a function that keeps access to the scope where it was created, even after
+          that scope leaves the stack — here a counter lives inside
+          <code>criarContador()</code> with no global variable. I used closures because they
+          encapsulate state without classes; compose/pipe/curry compose pure logic; memoize caches
+          results and the comparison uses <code>performance.now()</code>.</span
+        >
         <div slot="demo" class="area-demo" id="area-demo01">
-          <noscript>Esta demo precisa de JavaScript habilitado.</noscript>
+          <noscript>This demo requires JavaScript to be enabled.</noscript>
         </div>
         <code-peek
           src="src/demos/01-closures-hof.js"
@@ -111,19 +133,23 @@
         ></code-peek>
       </demo-card>
 
-      <!-- ═══════════════ 02 · ASSÍNCRONO ═══════════════ -->
+      <!-- ═══════════════ 02 · ASYNC ═══════════════ -->
       <demo-card
         id="demo02"
         number="02"
-        title="Assíncrono: async/await, fetch e cancelamento"
+        title="Asynchronous: async/await, fetch and cancellation"
+        data-i18n-attr="title:demo02.title"
         code="https://github.com/roldan-eng-software/Perfect-JavaScript-example/blob/main/src/demos/02-async-fetch.js"
         data-demo="02-async-fetch"
       >
-        <code>async/await</code> torna o código assíncrono sequencial e legível;
-        <code>Promise.all</code> paraleliza, <code>allSettled</code> tolera falhas parciais e
-        <code>race</code> + timeout implementam deadline. Usei <code>AbortController</code> porque
-        cancelar requisição é obrigatório em UI real, e <code>retry</code> com backoff porque rede
-        falha — os estados loading/erro/vazio/sucesso sempre aparecem.
+        <span data-i18n-html="demo02.intro"
+          ><code>async/await</code> makes asynchronous code sequential and readable;
+          <code>Promise.all</code> parallelizes, <code>allSettled</code> tolerates partial failures
+          and <code>race</code> + timeout implement a deadline. I used
+          <code>AbortController</code> because cancelling requests is mandatory in real UIs, and
+          <code>retry</code> with backoff because networks fail — loading/error/empty/success states
+          always show up.</span
+        >
         <div slot="demo" class="area-demo" id="area-demo02"></div>
         <code-peek
           src="src/demos/02-async-fetch.js"
@@ -135,15 +161,18 @@
       <demo-card
         id="demo03"
         number="03"
-        title="Event loop: microtasks, macrotasks e rAF"
+        title="Event loop: microtasks, macrotasks and rAF"
+        data-i18n-attr="title:demo03.title"
         code="https://github.com/roldan-eng-software/Perfect-JavaScript-example/blob/main/src/demos/03-event-loop.js"
         data-demo="03-event-loop"
       >
-        A ordem no JS não é a ordem do texto: código síncrono roda primeiro, depois a fila de
-        microtasks (<code>Promise.then</code>, <code>queueMicrotask</code>) esvazia por completo, e
-        só então vêm macrotasks (<code>setTimeout</code>) e <code>requestAnimationFrame</code>.
-        Demonstro isso executando a sequência e numerando cada passo — útil para entender bugs de
-        concorrência.
+        <span data-i18n-html="demo03.intro"
+          >Order in JS is not textual order: synchronous code runs first, then the microtask queue
+          (<code>Promise.then</code>, <code>queueMicrotask</code>) drains completely, and only then
+          come macrotasks (<code>setTimeout</code>) and <code>requestAnimationFrame</code>. I
+          demonstrate this by running the sequence and numbering each step — handy for understanding
+          concurrency bugs.</span
+        >
         <div slot="demo" class="area-demo" id="area-demo03"></div>
         <code-peek src="src/demos/03-event-loop.js" title="src/demos/03-event-loop.js"></code-peek>
       </demo-card>
@@ -152,14 +181,18 @@
       <demo-card
         id="demo04"
         number="04"
-        title="Observers e DOM eficiente"
+        title="Observers and efficient DOM"
+        data-i18n-attr="title:demo04.title"
         code="https://github.com/roldan-eng-software/Perfect-JavaScript-example/blob/main/src/demos/04-dom-observers.js"
         data-demo="04-dom-observers"
       >
-        Observers reagem a mudanças sem poluição de listeners: IntersectionObserver faz
-        reveal/scroll-spy, ResizeObserver mede layout, MutationObserver observa alterações. Combinei
-        com delegação de eventos, <code>&lt;template&gt;</code> e <code>DocumentFragment</code> para
-        renderizar listas grandes com um único reflow — em vez de N.
+        <span data-i18n-html="demo04.intro"
+          >Observers react to changes without listener pollution: IntersectionObserver does
+          reveal/scroll-spy, ResizeObserver measures layout, MutationObserver watches mutations. I
+          combined them with event delegation, <code>&lt;template&gt;</code> and
+          <code>DocumentFragment</code> to render large lists in a single reflow — instead of
+          N.</span
+        >
         <div slot="demo" class="area-demo" id="area-demo04"></div>
         <code-peek
           src="src/demos/04-dom-observers.js"
@@ -167,18 +200,21 @@
         ></code-peek>
       </demo-card>
 
-      <!-- ═══════════════ 05 · ESTADO ═══════════════ -->
+      <!-- ═══════════════ 05 · STATE ═══════════════ -->
       <demo-card
         id="demo05"
         number="05"
-        title="Estado, pub/sub e reatividade"
+        title="State, pub/sub and reactivity"
+        data-i18n-attr="title:demo05.title"
         code="https://github.com/roldan-eng-software/Perfect-JavaScript-example/blob/main/src/demos/05-state-store.js"
         data-demo="05-state-store"
       >
-        Uma mini store com pub/sub mantém UI e dados dessincronizados. Usei imutabilidade (spread +
-        <code>structuredClone</code>) para mudanças rastreáveis, selectors para leituras pontuais,
-        <code>Proxy</code> para reatividade reativa e <code>localStorage</code> para persistir — com
-        try/catch, porque storage pode estar bloqueado.
+        <span data-i18n-html="demo05.intro"
+          >A mini store with pub/sub keeps UI and data in sync. I used immutability (spread +
+          <code>structuredClone</code>) for traceable changes, selectors for targeted reads,
+          <code>Proxy</code> for reactivity and <code>localStorage</code> for persistence — with
+          try/catch, because storage can be blocked.</span
+        >
         <div slot="demo" class="area-demo" id="area-demo05"></div>
         <code-peek
           src="src/demos/05-state-store.js"
@@ -190,14 +226,17 @@
       <demo-card
         id="demo06"
         number="06"
-        title="Classes e POO moderno"
+        title="Classes and modern OOP"
+        data-i18n-attr="title:demo06.title"
         code="https://github.com/roldan-eng-software/Perfect-JavaScript-example/blob/main/src/demos/06-classes-private-fields.js"
         data-demo="06-classes-private-fields"
       >
-        Campos privados <code>#</code> dão encapsulamento real (não é convenção, é sintaxe);
-        getters/setters validam; <code>static</code> blocks configuram a classe no carregamento;
-        herança e mixins cobrem reuso, e <code>WeakMap</code>/<code>Symbol</code> são alternativas
-        "à moda antiga" comparadas lado a lado com fábrica de funções.
+        <span data-i18n-html="demo06.intro"
+          >Private fields <code>#</code> give real encapsulation (not a convention, syntax);
+          getters/setters validate; <code>static</code> blocks configure the class at load time;
+          inheritance and mixins cover reuse, and <code>WeakMap</code>/<code>Symbol</code> are the
+          "old-school" alternatives compared side by side with a factory function.</span
+        >
         <div slot="demo" class="area-demo" id="area-demo06"></div>
         <code-peek
           src="src/demos/06-classes-private-fields.js"
@@ -205,18 +244,21 @@
         ></code-peek>
       </demo-card>
 
-      <!-- ═══════════════ 07 · GERADORES ═══════════════ -->
+      <!-- ═══════════════ 07 · GENERATORS ═══════════════ -->
       <demo-card
         id="demo07"
         number="07"
-        title="Geradores e iteradores"
+        title="Generators and iterators"
+        data-i18n-attr="title:demo07.title"
         code="https://github.com/roldan-eng-software/Perfect-JavaScript-example/blob/main/src/demos/07-generators-iterators.js"
         data-demo="07-generators-iterators"
       >
-        <code>function*</code> produz valores sob demanda — perfeitos para sequências infinitas e
-        paginação; <code>Symbol.iterator</code> torna qualquer objeto iterável por
-        <code>for…of</code>; async generators + <code>for await...of</code> consomem APIs paginadas
-        com elegância. Incluí Map/Set/WeakSet e detecção de iterator helpers com fallback.
+        <span data-i18n-html="demo07.intro"
+          ><code>function*</code> produces values on demand — perfect for infinite sequences and
+          pagination; <code>Symbol.iterator</code> makes any object iterable by <code>for…of</code>;
+          async generators + <code>for await...of</code> consume paginated APIs elegantly. I
+          included Map/Set/WeakSet and iterator-helper detection with a fallback.</span
+        >
         <div slot="demo" class="area-demo" id="area-demo07"></div>
         <code-peek
           src="src/demos/07-generators-iterators.js"
@@ -228,32 +270,38 @@
       <demo-card
         id="demo08"
         number="08"
-        title="Web Worker: paralelismo sem travar a UI"
+        title="Web Worker: parallelism without freezing the UI"
+        data-i18n-attr="title:demo08.title"
         code="https://github.com/roldan-eng-software/Perfect-JavaScript-example/blob/main/src/demos/08-web-worker.js"
         data-demo="08-web-worker"
       >
-        Código pesado na main thread congela rolagem, cliques e animações. Um
-        <code>Worker</code> roda o cálculo em outra thread com <code>postMessage</code>, barra de
-        progresso e cancelamento por <code>worker.terminate()</code>. A demo compara os frames
-        renderizados com e sem o worker — a diferença é visível.
+        <span data-i18n-html="demo08.intro"
+          >Heavy code on the main thread freezes scrolling, clicks and animations. A
+          <code>Worker</code> runs the calculation on another thread with <code>postMessage</code>,
+          a progress bar and cancellation via <code>worker.terminate()</code>. The demo compares
+          frames rendered with and without the worker — the difference is visible.</span
+        >
         <div slot="demo" class="area-demo" id="area-demo08"></div>
         <code-peek src="src/demos/08-web-worker.js" title="src/demos/08-web-worker.js"></code-peek>
       </demo-card>
 
-      <!-- ═══════════════ 09 · FORMULÁRIOS ═══════════════ -->
+      <!-- ═══════════════ 09 · FORMS ═══════════════ -->
       <demo-card
         id="demo09"
         number="09"
-        title="Formulários e validação acessível"
+        title="Forms and accessible validation"
+        data-i18n-attr="title:demo09.title"
         code="https://github.com/roldan-eng-software/Perfect-JavaScript-example/blob/main/src/demos/09-forms-validation.js"
         data-demo="09-forms-validation"
       >
-        Constraint Validation API (<code>setCustomValidity</code>,
-        <code>checkValidity</code>, <code>reportValidity</code>) dá validação nativa com mensagens
-        próprias; máscaras de CPF/CEP/telefone feitas à mão, validação em tempo real com
-        <code>debounce</code>, mensagens ligadas por
-        <code>aria-describedby</code>/<code>aria-live</code>, e <code>FormData</code> +
-        <code>Object.fromEntries</code> para coleta limpa.
+        <span data-i18n-html="demo09.intro"
+          >The Constraint Validation API (<code>setCustomValidity</code>,
+          <code>checkValidity</code>, <code>reportValidity</code>) gives native validation with
+          custom messages; hand-made CPF/CEP/phone masks, real-time validation with
+          <code>debounce</code>, messages wired via
+          <code>aria-describedby</code>/<code>aria-live</code>, and <code>FormData</code> +
+          <code>Object.fromEntries</code> for clean collection.</span
+        >
         <div slot="demo" class="area-demo" id="area-demo09"></div>
         <code-peek
           src="src/demos/09-forms-validation.js"
@@ -265,14 +313,17 @@
       <demo-card
         id="demo10"
         number="10"
-        title="Drag &amp; drop acessível"
+        title="Accessible drag & drop"
+        data-i18n-attr="title:demo10.title"
         code="https://github.com/roldan-eng-software/Perfect-JavaScript-example/blob/main/src/demos/10-drag-and-drop.js"
         data-demo="10-drag-and-drop"
       >
-        O Kanban usa a HTML5 Drag and Drop API <em>e</em> uma alternativa completa por teclado
-        (setas movem cartões entre colunas) — arrastar com mouse não pode ser a única via. A ordem é
-        persistida em <code>localStorage</code>, e cada movimento é anunciado em
-        <code>aria-live</code>.
+        <span data-i18n-html="demo10.intro"
+          >The Kanban uses the HTML5 Drag and Drop API <em>and</em> a complete keyboard alternative
+          (arrow keys move cards between columns) — dragging with the mouse cannot be the only path.
+          The order is persisted in <code>localStorage</code>, and every move is announced in
+          <code>aria-live</code>.</span
+        >
         <div slot="demo" class="area-demo" id="area-demo10"></div>
         <code-peek
           src="src/demos/10-drag-and-drop.js"
@@ -284,13 +335,16 @@
       <demo-card
         id="demo11"
         number="11"
-        title="Internacionalização com Intl"
+        title="Internationalization with Intl"
+        data-i18n-attr="title:demo11.title"
         code="https://github.com/roldan-eng-software/Perfect-JavaScript-example/blob/main/src/demos/11-intl-i18n.js"
         data-demo="11-intl-i18n"
       >
-        A API <code>Intl</code> nativa cobre moeda, data, tempo relativo, listas, plurais e
-        ordenação — zero bibliotecas. Trocar entre pt-BR/en-US/es atualiza o DOM na hora, sem
-        recarregar, usando dicionários JSON e <code>textContent</code>.
+        <span data-i18n-html="demo11.intro"
+          >The native <code>Intl</code> API covers currency, dates, relative time, lists, plurals
+          and collation — zero libraries. Switching between pt-BR/en-US/es updates the DOM
+          instantly, without reloading, using JSON dictionaries and <code>textContent</code>.</span
+        >
         <div slot="demo" class="area-demo" id="area-demo11"></div>
         <code-peek src="src/demos/11-intl-i18n.js" title="src/demos/11-intl-i18n.js"></code-peek>
       </demo-card>
@@ -299,14 +353,17 @@
       <demo-card
         id="demo12"
         number="12"
-        title="Performance: debounce, throttle, rAF e virtualização"
+        title="Performance: debounce, throttle, rAF and virtualization"
+        data-i18n-attr="title:demo12.title"
         code="https://github.com/roldan-eng-software/Perfect-JavaScript-example/blob/main/src/demos/12-performance.js"
         data-demo="12-performance"
       >
-        Contadores em tempo real mostram a diferença entre debounce e throttle;
-        <code>requestAnimationFrame</code> sincroniza com o frame; virtualização renderiza só a
-        janela visível de 10.000 itens (~20 nós no DOM, não 10.000);
-        <code>performance.mark/measure</code> mede com precisão de milissegundos.
+        <span data-i18n-html="demo12.intro"
+          >Real-time counters show the difference between debounce and throttle;
+          <code>requestAnimationFrame</code> syncs with the frame; virtualization renders only the
+          visible window of 10,000 items (~20 DOM nodes, not 10,000);
+          <code>performance.mark/measure</code> measures with millisecond precision.</span
+        >
         <div slot="demo" class="area-demo" id="area-demo12"></div>
         <code-peek
           src="src/demos/12-performance.js"
@@ -314,18 +371,22 @@
         ></code-peek>
       </demo-card>
 
-      <!-- ═══════════════ 13 · APIs DO NAVEGADOR ═══════════════ -->
+      <!-- ═══════════════ 13 · BROWSER APIS ═══════════════ -->
       <demo-card
         id="demo13"
         number="13"
-        title="APIs do navegador"
+        title="Browser APIs"
+        data-i18n-attr="title:demo13.title"
         code="https://github.com/roldan-eng-software/Perfect-JavaScript-example/blob/main/src/demos/13-browser-apis.js"
         data-demo="13-browser-apis"
       >
-        Clipboard, Web Share, Geolocation, matchMedia, Page Visibility, Notification,
-        URLSearchParams, History API, BroadcastChannel (entre abas!) e <code>&lt;dialog&gt;</code> —
-        todas com feature detection (<code>'x' in window</code>) e fallback amigável. Nenhuma
-        permissão é pedida automaticamente: geolocation e notificação são opt-in.
+        <span data-i18n-html="demo13.intro"
+          >Clipboard, Web Share, Geolocation, matchMedia, Page Visibility, Notification,
+          URLSearchParams, History API, BroadcastChannel (across tabs!) and
+          <code>&lt;dialog&gt;</code> — all with feature detection (<code>'x' in window</code>) and
+          a friendly fallback. No permission is requested automatically: geolocation and
+          notifications are opt-in.</span
+        >
         <div slot="demo" class="area-demo" id="area-demo13"></div>
         <code-peek
           src="src/demos/13-browser-apis.js"
@@ -333,85 +394,167 @@
         ></code-peek>
       </demo-card>
 
-      <!-- ═══════════════ TESTES ═══════════════ -->
+      <!-- ═══════════════ TESTS ═══════════════ -->
       <section id="testes" class="secao-informativa" aria-labelledby="titulo-testes">
-        <h2 id="titulo-testes">Testes</h2>
-        <p>
-          Os utilitários têm testes unitários com o runner nativo do Node (<code>node:test</code> +
-          <code>node:assert</code>) — sem Jest, sem Vitest. Rode com <code>npm test</code>.
+        <h2 id="titulo-testes" data-i18n="tests.title">Tests</h2>
+        <p data-i18n-html="tests.p">
+          The utilities have unit tests with Node's native runner (<code>node:test</code> +
+          <code>node:assert</code>) — no Jest, no Vitest. Run with <code>npm test</code>.
         </p>
         <ul class="lista-testes">
-          <li><code>tests/debounce.test.js</code> — timers com <code>mock.timers</code></li>
-          <li><code>tests/throttle.test.js</code> — leading/trailing/cancel</li>
-          <li><code>tests/memoize.test.js</code> — cache, resolver, clear</li>
-          <li><code>tests/compose.test.js</code> — compose/pipe/curry e erros</li>
-          <li><code>tests/retry.test.js</code> — backoff exponencial, cause, abort</li>
-          <li><code>tests/store.test.js</code> — subscribe/unsubscribe/imutabilidade</li>
-          <li><code>tests/validators.test.js</code> — CPF/CEP/e-mail/senha</li>
-          <li><code>tests/format.test.js</code> — Intl number/date/list/plural/collate</li>
           <li>
-            <code>tests/highlight.test.js</code> — tokenizador puro do
-            <code>&lt;code-peek&gt;</code>
+            <code>tests/debounce.test.js</code>
+            <span data-i18n-html="tests.d1">— timers with <code>mock.timers</code></span>
+          </li>
+          <li>
+            <code>tests/throttle.test.js</code>
+            <span data-i18n-html="tests.d2">— leading/trailing/cancel</span>
+          </li>
+          <li>
+            <code>tests/memoize.test.js</code>
+            <span data-i18n-html="tests.d3">— cache, resolver, clear</span>
+          </li>
+          <li>
+            <code>tests/compose.test.js</code>
+            <span data-i18n-html="tests.d4">— compose/pipe/curry and errors</span>
+          </li>
+          <li>
+            <code>tests/retry.test.js</code>
+            <span data-i18n-html="tests.d5">— exponential backoff, cause, abort</span>
+          </li>
+          <li>
+            <code>tests/store.test.js</code>
+            <span data-i18n-html="tests.d6">— subscribe/unsubscribe/immutability</span>
+          </li>
+          <li>
+            <code>tests/validators.test.js</code>
+            <span data-i18n-html="tests.d7">— CPF/CEP/e-mail/password</span>
+          </li>
+          <li>
+            <code>tests/format.test.js</code>
+            <span data-i18n-html="tests.d8">— Intl number/date/list/plural/collate</span>
+          </li>
+          <li>
+            <code>tests/highlight.test.js</code>
+            <span data-i18n-html="tests.d9"
+              >— pure tokenizer for <code>&lt;code-peek&gt;</code></span
+            >
           </li>
         </ul>
-        <code-peek src="package.json" title="package.json (script de testes)"></code-peek>
+        <code-peek
+          src="package.json"
+          title="package.json (test script)"
+          data-i18n-attr="title:tests.peek"
+        ></code-peek>
       </section>
 
-      <!-- ═══════════════ COMO FOI FEITO ═══════════════ -->
+      <!-- ═══════════════ HOW IT WAS BUILT ═══════════════ -->
       <section id="como-foi-feito" class="secao-informativa" aria-labelledby="titulo-como">
-        <h2 id="titulo-como">Como foi feito</h2>
-        <p>
-          Cada módulo tem cabeçalho padronizado (ARQUIVO/PROPÓSITO/CONCEITOS/USADO EM) e JSDoc
-          completo nas exportações. Comece pelos utilitários puros — são a base testável de tudo.
+        <h2 id="titulo-como" data-i18n="how.title">How it was built</h2>
+        <p data-i18n-html="how.p">
+          Every module has a standard header (ARQUIVO / PROPÓSITO / CONCEITOS / USADO EM) and
+          complete JSDoc on its exports. Start with the pure utilities — they are the testable
+          foundation of everything.
         </p>
         <ul class="lista-modulos">
           <li>
-            <a href="src/core/dom.js">core/dom.js</a> — helpers <code>$</code>, <code>h()</code>,
-            delegação
-          </li>
-          <li><a href="src/core/store.js">core/store.js</a> — mini store pub/sub imutável</li>
-          <li>
-            <a href="src/core/event-bus.js">core/event-bus.js</a> — EventTarget como barramento
-          </li>
-          <li><a href="src/core/router.js">core/router.js</a> — roteador por hash + History API</li>
-          <li>
-            <a href="src/core/storage.js">core/storage.js</a> — localStorage seguro com fallback
-          </li>
-          <li><a href="src/core/logger.js">core/logger.js</a> — logger com níveis por flag</li>
-          <li><a href="src/utils/debounce.js">utils/debounce.js</a> — atraso por inatividade</li>
-          <li><a href="src/utils/throttle.js">utils/throttle.js</a> — limite por intervalo</li>
-          <li><a href="src/utils/memoize.js">utils/memoize.js</a> — cache por argumentos</li>
-          <li><a href="src/utils/compose.js">utils/compose.js</a> — compose/pipe/curry</li>
-          <li><a href="src/utils/retry.js">utils/retry.js</a> — retry com backoff exponencial</li>
-          <li><a href="src/utils/sleep.js">utils/sleep.js</a> — pausa cancelável</li>
-          <li>
-            <a href="src/utils/deep-clone.js">utils/deep-clone.js</a> — clone profundo com fallback
-          </li>
-          <li><a href="src/utils/format.js">utils/format.js</a> — formatação Intl</li>
-          <li><a href="src/utils/validators.js">utils/validators.js</a> — validações puras</li>
-          <li><a href="src/utils/highlight.js">utils/highlight.js</a> — tokenizador de sintaxe</li>
-          <li>
-            <a href="src/components/code-peek.js">components/code-peek.js</a> — exibe o código real
+            <a href="src/core/dom.js">core/dom.js</a>
+            <span data-i18n-html="how.d1"
+              >— <code>$</code>, <code>h()</code>, delegation helpers</span
+            >
           </li>
           <li>
-            <a href="src/components/demo-card.js">components/demo-card.js</a> — cartão de seção
+            <a href="src/core/store.js">core/store.js</a>
+            <span data-i18n-html="how.d2">— immutable pub/sub mini store</span>
           </li>
           <li>
-            <a href="src/components/toast-notification.js">components/toast-notification.js</a> —
-            avisos
+            <a href="src/core/event-bus.js">core/event-bus.js</a>
+            <span data-i18n-html="how.d3">— EventTarget as a message bus</span>
           </li>
           <li>
-            <a href="src/components/theme-toggle.js">components/theme-toggle.js</a> — tema
-            claro/escuro
+            <a href="src/core/router.js">core/router.js</a>
+            <span data-i18n-html="how.d4">— hash router + History API</span>
           </li>
           <li>
-            <a href="src/components/accessible-tabs.js">components/accessible-tabs.js</a> — abas
-            ARIA
+            <a href="src/core/storage.js">core/storage.js</a>
+            <span data-i18n-html="how.d5">— safe localStorage with fallback</span>
           </li>
           <li>
-            <a href="docs/ARCHITECTURE.md">docs/ARCHITECTURE.md</a> — diagrama e ciclo de vida
+            <a href="src/core/logger.js">core/logger.js</a>
+            <span data-i18n-html="how.d6">— leveled logger toggled by flag</span>
           </li>
-          <li><a href="docs/JS-TECHNIQUES.md">docs/JS-TECHNIQUES.md</a> — tabela de técnicas</li>
+          <li>
+            <a href="src/utils/debounce.js">utils/debounce.js</a>
+            <span data-i18n-html="how.d7">— delay on inactivity</span>
+          </li>
+          <li>
+            <a href="src/utils/throttle.js">utils/throttle.js</a>
+            <span data-i18n-html="how.d8">— rate limit per interval</span>
+          </li>
+          <li>
+            <a href="src/utils/memoize.js">utils/memoize.js</a>
+            <span data-i18n-html="how.d9">— cache by arguments</span>
+          </li>
+          <li>
+            <a href="src/utils/compose.js">utils/compose.js</a>
+            <span data-i18n-html="how.d10">— compose/pipe/curry</span>
+          </li>
+          <li>
+            <a href="src/utils/retry.js">utils/retry.js</a>
+            <span data-i18n-html="how.d11">— retry with exponential backoff</span>
+          </li>
+          <li>
+            <a href="src/utils/sleep.js">utils/sleep.js</a>
+            <span data-i18n-html="how.d12">— cancellable sleep</span>
+          </li>
+          <li>
+            <a href="src/utils/deep-clone.js">utils/deep-clone.js</a>
+            <span data-i18n-html="how.d13">— deep clone with fallback</span>
+          </li>
+          <li>
+            <a href="src/utils/format.js">utils/format.js</a>
+            <span data-i18n-html="how.d14">— Intl formatting</span>
+          </li>
+          <li>
+            <a href="src/utils/validators.js">utils/validators.js</a>
+            <span data-i18n-html="how.d15">— pure validators</span>
+          </li>
+          <li>
+            <a href="src/utils/highlight.js">utils/highlight.js</a>
+            <span data-i18n-html="how.d16">— syntax tokenizer</span>
+          </li>
+          <li>
+            <a href="src/components/code-peek.js">components/code-peek.js</a>
+            <span data-i18n-html="how.d17">— renders the real source code</span>
+          </li>
+          <li>
+            <a href="src/components/demo-card.js">components/demo-card.js</a>
+            <span data-i18n-html="how.d18">— section card</span>
+          </li>
+          <li>
+            <a href="src/components/toast-notification.js">components/toast-notification.js</a>
+            <span data-i18n-html="how.d19">— notifications</span>
+          </li>
+          <li>
+            <a href="src/components/theme-toggle.js">components/theme-toggle.js</a>
+            <span data-i18n-html="how.d20">— light/dark/system theme</span>
+          </li>
+          <li>
+            <a href="src/components/accessible-tabs.js">components/accessible-tabs.js</a>
+            <span data-i18n-html="how.d21">— accessible ARIA tabs</span>
+          </li>
+          <li>
+            <a href="src/core/i18n.js">core/i18n.js</a>
+            <span data-i18n-html="how.d24">— language dictionaries (en-US/pt-BR)</span>
+          </li>
+          <li>
+            <a href="docs/ARCHITECTURE.md">docs/ARCHITECTURE.md</a>
+            <span data-i18n-html="how.d22">— diagram and demo lifecycle</span>
+          </li>
+          <li>
+            <a href="docs/JS-TECHNIQUES.md">docs/JS-TECHNIQUES.md</a>
+            <span data-i18n-html="how.d23">— techniques table</span>
+          </li>
         </ul>
       </section>
     </main>
@@ -435,15 +578,15 @@
           >LinkedIn</a
         >
         ·
-        <a href="LICENSE">MIT License</a>
+        <a href="LICENSE" data-i18n="foot.license">MIT License</a>
       </p>
-      <p class="rodape-nota">
-        Feito com JavaScript puro —
+      <p class="rodape-nota" data-i18n-html="foot.note">
+        Built with pure JavaScript —
         <a
           href="https://github.com/roldan-eng-software/Perfect-JavaScript-example"
           target="_blank"
           rel="noopener noreferrer"
-          >código no GitHub</a
+          >source on GitHub</a
         >.
       </p>
     </footer>

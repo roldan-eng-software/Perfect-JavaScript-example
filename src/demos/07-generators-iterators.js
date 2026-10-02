@@ -14,6 +14,90 @@
  */
 import { h, on, renderList } from '../core/dom.js';
 import { sleep } from '../utils/sleep.js';
+import { tr } from '../core/i18n.js';
+
+/**
+ * Dicionário de strings da demo — a UI lê o idioma ativo via `tr()`.
+ * Comentários e JSDoc permanecem em pt-BR (convenção do projeto).
+ */
+const STRINGS = {
+  'en-US': {
+    'generator.exhausted': '— generator exhausted, restarted —',
+    'panel.generator.title': 'a) function* — on-demand Fibonacci',
+    'btn.consumeForOf': 'Consume with for…of',
+    'btn.next5': 'Generate next 5',
+    'note.forOf':
+      'for…of calls [Symbol.iterator]() and repeats .next() until done:true; the button does exactly that by hand.',
+    'panel.range.title': 'b) Custom iterable: Symbol.iterator (range)',
+    'btn.iterateRange': 'Iterate range 1..8',
+    'note.range':
+      'for…of and spread share the same protocol: if the object iterates, everything in the ecosystem works.',
+    'pages.waiting': 'waiting for pages…',
+    'pages.pageTitle': 'Page {pagina}',
+    'pages.received': 'page {pagina} of 4 received',
+    'pages.done': '4 of 4 pages received — for await...of finished on its own',
+    'output.error': 'error: {msg}',
+    'panel.pages.title': 'c) Async generator + for await...of (pagination)',
+    'btn.loadPages': 'Load 4 pages',
+    'note.pages':
+      'sleep(150, {signal}) simulates latency; aborting in cleanup rejects the promise and the loop stops gracefully.',
+    'infinite.aria': 'Infinite-scroll list (item role)',
+    'scroll.limit': 'limit of {max} items reached',
+    'scroll.loading': 'loading…',
+    'scroll.shown': '{total} of {max} items displayed',
+    'panel.scroll.title': 'd) Infinite scroll with an async generator',
+    'btn.loadMore': 'Load more',
+    'note.scroll':
+      'Scrolling near the end requests the next batch; the generator resumes exactly where it stopped (max. 60 items).',
+    'panel.collections.title': 'e) Set / WeakSet / Map + Object.groupBy and Map.groupBy',
+    'btn.group': 'Group and deduplicate',
+    'note.collections':
+      "Detection: 'Object.groupBy' in Object ? Object.groupBy(...) : manual reduce — older browsers don't break.",
+    'panel.helpers.title': 'f) Iterator helpers — support + fallback',
+    'btn.detectRun': 'Detect and run',
+    'note.helpers':
+      'even squares from 1..10 limited to 3: [4, 16, 36] — with native Iterator.map or the equivalent manual generator.',
+    'loading.cancelled': 'loading cancelled (cleanup)',
+  },
+  'pt-BR': {
+    'generator.exhausted': '— gerador esgotado, reiniciado —',
+    'panel.generator.title': 'a) function* — Fibonacci sob demanda',
+    'btn.consumeForOf': 'Consumir com for…of',
+    'btn.next5': 'Gerar próximos 5',
+    'note.forOf':
+      'for…of chama [Symbol.iterator]() e repete .next() até done:true; o botão faz exatamente isso na mão.',
+    'panel.range.title': 'b) Iterável próprio: Symbol.iterator (range)',
+    'btn.iterateRange': 'Percorrer range 1..8',
+    'note.range':
+      'for…of e spread compartilham o mesmo protocolo: se o objeto itera, tudo do ecossistema funciona.',
+    'pages.waiting': 'aguardando páginas…',
+    'pages.pageTitle': 'Página {pagina}',
+    'pages.received': 'página {pagina} de 4 recebida',
+    'pages.done': '4 de 4 páginas recebidas — for await...of encerrou sozinho',
+    'output.error': 'erro: {msg}',
+    'panel.pages.title': 'c) Async generator + for await...of (paginação)',
+    'btn.loadPages': 'Carregar 4 páginas',
+    'note.pages':
+      'sleep(150, {signal}) simula latência; abortar no cleanup rejeita a promise e o laço para com elegância.',
+    'infinite.aria': 'Lista com rolagem infinita (role de item)',
+    'scroll.limit': 'limite de {max} itens atingido',
+    'scroll.loading': 'carregando…',
+    'scroll.shown': '{total} de {max} itens exibidos',
+    'panel.scroll.title': 'd) Scroll infinito com async generator',
+    'btn.loadMore': 'Carregar mais',
+    'note.scroll':
+      'Rolar perto do fim pede o próximo lote; o gerador retoma exatamente onde parou (máx. 60 itens).',
+    'panel.collections.title': 'e) Set / WeakSet / Map + Object.groupBy e Map.groupBy',
+    'btn.group': 'Agrupar e deduplicar',
+    'note.collections':
+      "Detecção: 'Object.groupBy' in Object ? Object.groupBy(...) : reduce manual — navegadores antigos não quebram.",
+    'panel.helpers.title': 'f) Iterator helpers — suporte + fallback',
+    'btn.detectRun': 'Detectar e executar',
+    'note.helpers':
+      'quadrados pares de 1..10 limitados a 3: [4, 16, 36] — com Iterator.map nativo ou gerador manual equivalente.',
+    'loading.cancelled': 'carregamento cancelado (cleanup)',
+  },
+};
 
 /**
  * Inicializa a demo de geradores e iteradores.
@@ -96,7 +180,7 @@ export function init(container) {
     if (geradorEsgotado) {
       geradorManual = fibonacci(30);
       geradorEsgotado = false;
-      anexar(saidaPassos, '— gerador esgotado, reiniciado —');
+      anexar(saidaPassos, tr(STRINGS, 'generator.exhausted'));
     }
     for (let i = 0; i < 5; i++) {
       const passo = geradorManual.next();
@@ -111,18 +195,26 @@ export function init(container) {
   const painelGerador = h(
     'div',
     { class: 'linha' },
-    h('h3', { text: 'a) function* — Fibonacci sob demanda' }),
+    h('h3', { text: tr(STRINGS, 'panel.generator.title') }),
     h(
       'div',
       { class: 'botoes' },
-      h('button', { type: 'button', text: 'Consumir com for…of', on: { click: consumirComForOf } }),
-      h('button', { type: 'button', text: 'Gerar próximos 5', on: { click: gerarProximos5 } }),
+      h('button', {
+        type: 'button',
+        text: tr(STRINGS, 'btn.consumeForOf'),
+        on: { click: consumirComForOf },
+      }),
+      h('button', {
+        type: 'button',
+        text: tr(STRINGS, 'btn.next5'),
+        on: { click: gerarProximos5 },
+      }),
     ),
     listaFib,
     saidaPassos,
     h('p', {
       class: 'nota',
-      text: 'for…of chama [Symbol.iterator]() e repete .next() até done:true; o botão faz exatamente isso na mão.',
+      text: tr(STRINGS, 'note.forOf'),
     }),
   );
 
@@ -173,17 +265,21 @@ export function init(container) {
   const painelRange = h(
     'div',
     { class: 'linha' },
-    h('h3', { text: 'b) Iterável próprio: Symbol.iterator (range)' }),
+    h('h3', { text: tr(STRINGS, 'panel.range.title') }),
     h(
       'div',
       { class: 'botoes' },
-      h('button', { type: 'button', text: 'Percorrer range 1..8', on: { click: exercitarRange } }),
+      h('button', {
+        type: 'button',
+        text: tr(STRINGS, 'btn.iterateRange'),
+        on: { click: exercitarRange },
+      }),
     ),
     listaRange,
     saidaRange,
     h('p', {
       class: 'nota',
-      text: 'for…of e spread compartilham o mesmo protocolo: se o objeto itera, tudo do ecossistema funciona.',
+      text: tr(STRINGS, 'note.range'),
     }),
   );
 
@@ -220,14 +316,14 @@ export function init(container) {
     if (paginasEmAndamento) return;
     paginasEmAndamento = true;
     caixaPaginas.replaceChildren();
-    statusPaginas.textContent = 'aguardando páginas…';
+    statusPaginas.textContent = tr(STRINGS, 'pages.waiting');
     try {
       for await (const pagina of paginando(4)) {
         caixaPaginas.append(
           h(
             'div',
             { class: 'pagina' },
-            h('strong', { text: `Página ${pagina.pagina}` }),
+            h('strong', { text: tr(STRINGS, 'pages.pageTitle', { pagina: pagina.pagina }) }),
             h(
               'ul',
               {},
@@ -235,13 +331,15 @@ export function init(container) {
             ),
           ),
         );
-        statusPaginas.textContent = `página ${pagina.pagina} de 4 recebida`;
+        statusPaginas.textContent = tr(STRINGS, 'pages.received', { pagina: pagina.pagina });
       }
-      statusPaginas.textContent = '4 de 4 páginas recebidas — for await...of encerrou sozinho';
+      statusPaginas.textContent = tr(STRINGS, 'pages.done');
     } catch (erro) {
       statusPaginas.textContent = ehCancelamento(erro)
-        ? 'carregamento cancelado (cleanup)'
-        : `erro: ${erro instanceof Error ? erro.message : String(erro)}`;
+        ? tr(STRINGS, 'loading.cancelled')
+        : tr(STRINGS, 'output.error', {
+            msg: erro instanceof Error ? erro.message : String(erro),
+          });
     } finally {
       paginasEmAndamento = false;
     }
@@ -250,13 +348,13 @@ export function init(container) {
   const painelPaginas = h(
     'div',
     { class: 'linha' },
-    h('h3', { text: 'c) Async generator + for await...of (paginação)' }),
+    h('h3', { text: tr(STRINGS, 'panel.pages.title') }),
     h(
       'div',
       { class: 'botoes' },
       h('button', {
         type: 'button',
-        text: 'Carregar 4 páginas',
+        text: tr(STRINGS, 'btn.loadPages'),
         on: { click: () => void consumirPaginas() },
       }),
     ),
@@ -264,7 +362,7 @@ export function init(container) {
     caixaPaginas,
     h('p', {
       class: 'nota',
-      text: 'sleep(150, {signal}) simula latência; abortar no cleanup rejeita a promise e o laço para com elegância.',
+      text: tr(STRINGS, 'note.pages'),
     }),
   );
 
@@ -296,18 +394,18 @@ export function init(container) {
       'max-height: 12rem; overflow-y: auto; border: 1px solid var(--cor-borda); ' +
       'border-radius: 7px; padding: 0.4rem;',
     tabindex: '0',
-    'aria-label': 'Lista com rolagem infinita (role de item)',
+    'aria-label': tr(STRINGS, 'infinite.aria'),
   });
 
   /** Carrega o próximo lote via .next() (retoma o gerador de onde parou). */
   async function carregarMais() {
     if (carregandoMais) return;
     if (totalItens >= MAXIMO_ITENS) {
-      statusScroll.textContent = `limite de ${MAXIMO_ITENS} itens atingido`;
+      statusScroll.textContent = tr(STRINGS, 'scroll.limit', { max: MAXIMO_ITENS });
       return;
     }
     carregandoMais = true;
-    statusScroll.textContent = 'carregando…';
+    statusScroll.textContent = tr(STRINGS, 'scroll.loading');
     try {
       for (let i = 0; i < LOTE && totalItens < MAXIMO_ITENS; i++) {
         const passo = await geradorScroll.next();
@@ -315,11 +413,16 @@ export function init(container) {
         totalItens += 1;
         listaScroll.append(h('li', { text: `Item ${passo.value}` }));
       }
-      statusScroll.textContent = `${totalItens} de ${MAXIMO_ITENS} itens exibidos`;
+      statusScroll.textContent = tr(STRINGS, 'scroll.shown', {
+        total: totalItens,
+        max: MAXIMO_ITENS,
+      });
     } catch (erro) {
       statusScroll.textContent = ehCancelamento(erro)
-        ? 'carregamento cancelado (cleanup)'
-        : `erro: ${erro instanceof Error ? erro.message : String(erro)}`;
+        ? tr(STRINGS, 'loading.cancelled')
+        : tr(STRINGS, 'output.error', {
+            msg: erro instanceof Error ? erro.message : String(erro),
+          });
     } finally {
       carregandoMais = false;
     }
@@ -341,13 +444,13 @@ export function init(container) {
   const painelScroll = h(
     'div',
     { class: 'linha' },
-    h('h3', { text: 'd) Scroll infinito com async generator' }),
+    h('h3', { text: tr(STRINGS, 'panel.scroll.title') }),
     h(
       'div',
       { class: 'botoes' },
       h('button', {
         type: 'button',
-        text: 'Carregar mais',
+        text: tr(STRINGS, 'btn.loadMore'),
         on: { click: () => void carregarMais() },
       }),
       statusScroll,
@@ -355,7 +458,7 @@ export function init(container) {
     caixaInfinite,
     h('p', {
       class: 'nota',
-      text: 'Rolar perto do fim pede o próximo lote; o gerador retoma exatamente onde parou (máx. 60 itens).',
+      text: tr(STRINGS, 'note.scroll'),
     }),
   );
   caixaInfinite.append(listaScroll);
@@ -426,20 +529,20 @@ export function init(container) {
   const painelColecoes = h(
     'div',
     { class: 'linha' },
-    h('h3', { text: 'e) Set / WeakSet / Map + Object.groupBy e Map.groupBy' }),
+    h('h3', { text: tr(STRINGS, 'panel.collections.title') }),
     h(
       'div',
       { class: 'botoes' },
       h('button', {
         type: 'button',
-        text: 'Agrupar e deduplicar',
+        text: tr(STRINGS, 'btn.group'),
         on: { click: exercitarColecoes },
       }),
     ),
     saidaColecoes,
     h('p', {
       class: 'nota',
-      text: "Detecção: 'Object.groupBy' in Object ? Object.groupBy(...) : reduce manual — navegadores antigos não quebram.",
+      text: tr(STRINGS, 'note.collections'),
     }),
   );
 
@@ -514,16 +617,20 @@ export function init(container) {
   const painelHelpers = h(
     'div',
     { class: 'linha' },
-    h('h3', { text: 'f) Iterator helpers — suporte + fallback' }),
+    h('h3', { text: tr(STRINGS, 'panel.helpers.title') }),
     h(
       'div',
       { class: 'botoes' },
-      h('button', { type: 'button', text: 'Detectar e executar', on: { click: exercitarHelpers } }),
+      h('button', {
+        type: 'button',
+        text: tr(STRINGS, 'btn.detectRun'),
+        on: { click: exercitarHelpers },
+      }),
     ),
     saidaHelpers,
     h('p', {
       class: 'nota',
-      text: 'quadrados pares de 1..10 limitados a 3: [4, 16, 36] — com Iterator.map nativo ou gerador manual equivalente.',
+      text: tr(STRINGS, 'note.helpers'),
     }),
   );
 

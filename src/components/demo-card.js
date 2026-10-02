@@ -9,6 +9,8 @@
  *   mantendo o tema claro/escuro coerente com o resto da página.
  */
 
+import { onLangChange, SHELL, tr } from '../core/i18n.js';
+
 /**
  * Componente <demo-card title="…" id="…" code="caminho/do/arquivo.js">.
  *
@@ -22,6 +24,9 @@
  * - `demo`: área da demonstração interativa
  */
 export class DemoCard extends HTMLElement {
+  /** @type {(() => void)|null} cancela assinatura de mudança de idioma */
+  #removerIdioma = null;
+
   static get observedAttributes() {
     return ['title', 'code', 'number'];
   }
@@ -67,7 +72,7 @@ export class DemoCard extends HTMLElement {
           <header class="cabecalho">
             <span class="numeral" aria-hidden="true"></span>
             <h2></h2>
-            <a class="codigo" target="_blank" rel="noopener noreferrer">ver código ↗</a>
+            <a class="codigo" target="_blank" rel="noopener noreferrer">view source ↗</a>
           </header>
           <div class="intro"><slot></slot></div>
           <div class="demo"><slot name="demo"></slot></div>
@@ -75,6 +80,16 @@ export class DemoCard extends HTMLElement {
       `;
     }
     this.#atualizar();
+    // Título vem do atributo (data-i18n-attr no HTML); o link "view source"
+    // é interno ao shadow — re-renderiza na troca de idioma
+    if (!this.#removerIdioma) {
+      this.#removerIdioma = onLangChange(() => this.#atualizar());
+    }
+  }
+
+  disconnectedCallback() {
+    this.#removerIdioma?.();
+    this.#removerIdioma = null;
   }
 
   attributeChangedCallback() {
@@ -102,6 +117,8 @@ export class DemoCard extends HTMLElement {
       if (code) {
         // link correto relativo ao index.html na raiz
         link.setAttribute('href', code);
+        // rótulo no idioma ativo (shadow DOM não é alcançado por aplicarTraducoes)
+        link.textContent = `${tr(SHELL, 'code.view')} ↗`;
         link.style.display = '';
       } else {
         link.style.display = 'none';

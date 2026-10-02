@@ -12,6 +12,7 @@
  *   exibimos orientação amigável em vez de erro crú.
  */
 import { tokenizeJs, renderTokens } from '../utils/highlight.js';
+import { onLangChange, SHELL, tr } from '../core/i18n.js';
 
 /** Classes CSS por tipo de token (herdadas do :host via variáveis). */
 const TOKEN_CLASSES = {
@@ -57,6 +58,9 @@ export class CodePeek extends HTMLElement {
   /** @type {string|null} fonte carregada (para o botão copiar) */
   #fonte = null;
 
+  /** @type {(() => void)|null} cancela a assinatura de mudança de idioma */
+  #removerIdioma = null;
+
   constructor() {
     super();
     // Shadow DOM: estilos do código não vazam para a página e vice-versa
@@ -74,12 +78,14 @@ export class CodePeek extends HTMLElement {
     this.#carregar();
   }
 
-  /** Cancela fetch e observers (sem vazamento). */
+  /** Cancela fetch, observers e assinatura de idioma (sem vazamento). */
   disconnectedCallback() {
     this.#abortar?.abort();
     this.#abortar = null;
     this.#observer?.disconnect();
     this.#observer = null;
+    this.#removerIdioma?.();
+    this.#removerIdioma = null;
   }
 
   /**
@@ -130,40 +136,31 @@ export class CodePeek extends HTMLElement {
           text-align: right; color: var(--cor-num, #8b949e);
           user-select: none;
         }
-        .tk-comment { color: var(--cor-comentario, #6e7781); font-style: italic; }
-        .tk-string  { color: var(--cor-string, #0a3069); }
-        .tk-number  { color: var(--cor-numero, #0550ae); }
-        .tk-keyword { color: var(--cor-palavra, #cf222e); font-weight: 600; }
-        .tk-operator{ color: var(--cor-operador, #0550ae); }
-        .tk-ident   { color: var(--cor-ident, #1f2328); }
+        .tk-comment { color: var(--tk-comentario, #6e7781); font-style: italic; }
+        .tk-string  { color: var(--tk-string, #0a3069); }
+        .tk-number  { color: var(--tk-numero, #0550ae); }
+        .tk-keyword { color: var(--tk-palavra, #cf222e); font-weight: 600; }
+        .tk-operator{ color: var(--tk-operador, #0550ae); }
+        .tk-ident   { color: var(--tk-ident, #1f2328); }
         .status { padding: 1.5rem .75rem; text-align: center; font-size: .875rem; }
         .erro { color: var(--cor-erro, #b62324); }
-        @media (prefers-color-scheme: dark) {
-          :host([data-tema='dark']) .caixa, .caixa {
-            background: var(--cor-fundo-codigo, #0d1117);
-            border-color: var(--cor-borda, #30363d);
-          }
-          .tk-string { color: #a5d6ff; }
-          .tk-number, .tk-operator { color: #79c0ff; }
-          .tk-keyword { color: #ff7b72; }
-          .tk-ident { color: #e6edf3; }
-          .tk-comment { color: #8b949e; }
-        }
+        /* Tema: só via variáveis --tk-* do documento (light é padrão;
+           dark/sistema aplicados por data-tema no <html>) */
       </style>
       <div class="caixa">
         <header>
           <span class="caminho" title=""></span>
-          <button type="button" part="botao" aria-label="Copiar código">Copiar</button>
+          <button type="button" part="botao" aria-label="Copy code">Copy</button>
         </header>
-        <div class="corpo" role="region" aria-label="Código-fonte" tabindex="0">
-          <div class="status" role="status" aria-live="polite">Carregando código…</div>
+        <div class="corpo" role="region" aria-label="Source code" tabindex="0">
+          <div class="status" role="status" aria-live="polite">Loading code…</div>
         </div>
       </div>
     `;
 
     // Título via textContent: dado do atributo nunca entra como HTML
     const caminho = this.shadowRoot.querySelector('.caminho');
-    const titulo = this.getAttribute('title') ?? 'código';
+    const titulo = this.getAttribute('title') ?? 'code';
     if (caminho) {
       caminho.textContent = titulo;
       caminho.title = this.getAttribute('src') ?? titulo;
@@ -173,6 +170,11 @@ export class CodePeek extends HTMLElement {
     this.shadowRoot.querySelector('button')?.addEventListener('click', () => {
       if (this.#fonte !== null) void this.#copiar(this.#fonte);
     });
+
+    // Idioma: atualiza rótulos do cabeçalho quando en-US ↔ pt-BR
+    this.#removerIdioma = onLangChange(() => this.#atualizarRotulos());
+    // Rótulos já nascem no idioma salvo (aplicarTraducoes não penetra shadowRoot)
+    this.#atualizarRotulos();
     this.#observer = new IntersectionObserver(
       (entradas) => {
         // Lazy: só busca o código quando a seção se aproxima da viewport
@@ -199,8 +201,7 @@ export class CodePeek extends HTMLElement {
     this.#abortar = new AbortController();
     const { signal } = this.#abortar;
 
-    corpo.innerHTML =
-      '<div class="status" role="status" aria-live="polite">Carregando código…</div>';
+    corpo.innerHTML = `<div class="status" role="status" aria-live="polite">${tr(SHELL, 'peek.loading')}</div>`;
 
     try {
       const resposta = await fetch(resolverSrc(src), { signal });
@@ -256,10 +257,8 @@ export class CodePeek extends HTMLElement {
     aviso.className = 'status erro';
     aviso.setAttribute('role', 'status');
     aviso.setAttribute('aria-live', 'polite');
-    aviso.textContent =
-      `Não foi possível carregar "${src}". ` +
-      'Se abriu a página via file://, sirva com "npm run serve" ' +
-      'ou acesse pelo GitHub Pages (fetch de arquivo local é bloqueado pelo navegador).';
+    // textContent com chave i18n: mensagem amigável no idioma ativo
+    aviso.textContent = tr(SHELL, 'peek.error', { src });
     corpo.replaceChildren(aviso);
   }
 
@@ -268,19 +267,40 @@ export class CodePeek extends HTMLElement {
    * @param {string} fonte código completo
    */
   async #copiar(fonte) {
-    const caminho = this.shadowRoot?.querySelector('.caminho');
     const botao = this.shadowRoot?.querySelector('button');
     try {
       await navigator.clipboard.writeText(fonte);
-      if (botao) botao.textContent = 'Copiado!';
-      if (caminho) caminho.setAttribute('aria-live', 'polite');
+      if (botao) botao.textContent = tr(SHELL, 'peek.copied');
     } catch {
       // Clipboard API exige contexto seguro; fallback: seleção manual
-      if (botao) botao.textContent = 'Falha ao copiar';
+      if (botao) botao.textContent = tr(SHELL, 'peek.copyFail');
     }
     setTimeout(() => {
-      if (botao) botao.textContent = 'Copiar';
+      if (botao) botao.textContent = tr(SHELL, 'peek.copy');
     }, 2000);
+  }
+
+  /** Reaplica rótulos (botão, aria, status) após troca de idioma. */
+  #atualizarRotulos() {
+    const botao = this.shadowRoot?.querySelector('button');
+    const corpo = this.shadowRoot?.querySelector('.corpo');
+    if (botao && !/^Cop|Copy/i.test(botao.textContent ?? '')) {
+      // botão em estado de feedback ('Copiado!') — só o aria-label muda
+      botao.setAttribute('aria-label', tr(SHELL, 'peek.copy'));
+    } else if (botao) {
+      botao.textContent = tr(SHELL, 'peek.copy');
+      botao.setAttribute('aria-label', tr(SHELL, 'peek.copy'));
+    }
+    // Status de loading/erro visível: re-renderiza no novo idioma
+    const status = corpo?.querySelector('.status');
+    if (status && this.#fonte === null) {
+      if (status.classList.contains('erro')) {
+        const src = this.getAttribute('src');
+        if (src) status.textContent = tr(SHELL, 'peek.error', { src });
+      } else {
+        status.textContent = tr(SHELL, 'peek.loading');
+      }
+    }
   }
 }
 

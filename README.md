@@ -40,20 +40,20 @@
 
 ## Arquitetura
 
-```
+```text
 Perfect-JavaScript-example/
 ├── index.html              ← landing semântica e acessível (entrada)
 ├── package.json            ← scripts; "type": "module"; só devDependencies
 ├── eslint.config.js        ← lint (ESLint flat) + .prettierrc + .editorconfig
 ├── css/
-│   └── styles.css          ← tema claro/escuro (variáveis CSS), mobile-first
+│   └── styles.css          ← tema claro (padrão) / escuro / sistema (variáveis CSS), mobile-first
 ├── data/
 │   ├── projects.json       ← dados para demos de fetch
 │   └── quotes.json
 ├── src/
-│   ├── main.js             ← bootstrap: router, scroll spy, LAZY loading das demos
+│   ├── main.js             ← bootstrap: i18n, router, scroll spy, LAZY loading das demos
 │   ├── core/               ← infra: dom, store reativa, event-bus, router,
-│   │                          storage seguro, logger com níveis
+│   │                          storage seguro, logger com níveis, i18n (en-US/pt-BR)
 │   ├── utils/              ← funções PURAS e testáveis: debounce, throttle,
 │   │                          memoize, compose/pipe/curry, retry, sleep,
 │   │                          deep-clone, format (Intl), validators, highlight
@@ -62,7 +62,7 @@ Perfect-JavaScript-example/
 │   └── demos/              ← 13 demonstrações; cada uma exporta init → cleanup
 ├── workers/
 │   └── heavy-task.worker.js ← cálculo pesado fora da main thread
-├── tests/                  ← node:test (9 arquivos, 80+ asserções de caso)
+├── tests/                  ← node:test (10 arquivos, 90+ casos)
 └── docs/
     ├── ARCHITECTURE.md     ← diagrama mermaid + ciclo de vida das demos
     └── JS-TECHNIQUES.md    ← tabela: técnica | arquivo | por quê | suporte
@@ -77,6 +77,8 @@ Detalhes no [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 | **ES Modules nativos**                  | O navegador já resolve imports — zero build significa menos ferramenta quebrando, deploy direto no GitHub Pages e código que é exatamente o que roda. |
 | **Zero dependências de runtime**        | O que o projeto ensina (debounce, store, validação, i18n) não precisa de npm para existir; `npm install` traz apenas ESLint e Prettier (dev).         |
 | **`init()` + cleanup em cada demo**     | Seções entram e saem da viewport; sem cleanup, listeners/timers/observers vazarão. O padrão torna o ciclo de vida explícito e testável.               |
+| **en-US como padrão + botão pt-BR**     | Audiência internacional lê inglês; o toggle no topo persiste a escolha e as demos são re-inicializadas na troca (strings lidas no `init`).            |
+| **Tema claro prioritário**              | Claro é o default da landing; escuro e "do sistema" são opt-in explícito do visitante — sem dark automático só porque o SO está escuro.               |
 | **Web Components**                      | Componentes reutilizáveis com encapsulamento real (Shadow DOM) e compatibilidade com qualquer framework — sem escolher um.                            |
 | **`<code-peek>` mostra o arquivo real** | O recrutador vê o mesmo código que roda (fetch do repositório), não uma cópia colada que pode divergir.                                               |
 | **Tokenizador próprio de sintaxe**      | Um mini-tokenizador puro (~150 linhas) com testes demonstra mais do que adicionar `highlight.js`.                                                     |
@@ -141,6 +143,8 @@ do `<code-peek>`.
 - [x] Feature detection + fallback em APIs novas
 - [x] Responsivo de 320px a 1920px
 - [x] Console limpo ao navegar por todas as seções
+- [x] **en-US por padrão** com alternância para pt-BR (botão no topo, persistida)
+- [x] **Tema claro é o padrão**; escuro e "do sistema" são opções do visitante
 
 ## Sobre o autor
 

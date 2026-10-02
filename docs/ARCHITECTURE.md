@@ -19,6 +19,7 @@ graph TD
         ROUTER[router.js]
         STORAGE[storage.js]
         LOGGER[logger.js]
+        I18N[i18n.js]
     end
 
     subgraph "utils/ — funções puras"
@@ -60,6 +61,7 @@ graph TD
     MAIN --> ROUTER
     MAIN --> LOGGER
     MAIN --> DOM
+    MAIN -->|aplicarTraducoes + toggle| I18N
     HTML -->|define| PEEK
     HTML -->|define| CARD
     HTML -->|define| TOAST
@@ -68,6 +70,7 @@ graph TD
     D01 --> DOM
     D01 --> COMPOSE
     D01 --> MEMOIZE
+    D01 -->|tr(STRINGS, …)| I18N
     D02 --> SLEEP
     D02 --> RETRY
     D03 --> LOGGER
@@ -80,7 +83,11 @@ graph TD
     D12 --> THROTTLE
     D13 --> STORAGE
     PEEK --> HL
+    PEEK -->|rótulos i18n| I18N
+    CARD -->|rótulos i18n| I18N
+    THEME -->|rótulos i18n| I18N
     THEME --> STORAGE
+    I18N --> STORAGE
     D02 -->|fetch| DATA
     D11 -->|fetch| DATA
 
@@ -146,18 +153,19 @@ Pontos-chave:
 
 ## Convenções de código
 
-| Convenção            | Regra                                                                                         |
-| -------------------- | --------------------------------------------------------------------------------------------- |
-| Cabeçalho de arquivo | bloco `ARQUIVO / PROPÓSITO / CONCEITOS DEMONSTRADOS / USADO EM / COMPLEXIDADE` em pt-BR       |
-| JSDoc                | obrigatório em toda exportação (`@param`, `@returns`, `@example`, `@throws` quando aplicável) |
-| Idioma               | comentários/conteúdo em pt-BR; identificáveis em inglês                                       |
-| Variáveis            | `const` por padrão, `let` quando reatribuída, **nunca** `var`                                 |
-| Modo estrito         | implícito nos ES Modules (`"use strict"`)                                                     |
-| DOM dinâmico         | `textContent`, `h()` ou `<template>` — **nunca** `innerHTML` com dados                        |
-| Erros                | `Error` com `cause`, tipos custom (`DemoLoadError`), feedback via `<toast-notification>`      |
-| APIs novas           | feature detection (`'x' in window`) + fallback + mensagem amigável                            |
-| Testes               | `node:test` + `node:assert/strict`, nomes descritivos em pt-BR, timers com `mock.timers`      |
-| Estilo               | Prettier (`.prettierrc`), ESLint flat (`eslint.config.js`)                                    |
+| Convenção            | Regra                                                                                                                                                                              |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Cabeçalho de arquivo | bloco `ARQUIVO / PROPÓSITO / CONCEITOS DEMONSTRADOS / USADO EM / COMPLEXIDADE` em pt-BR                                                                                            |
+| JSDoc                | obrigatório em toda exportação (`@param`, `@returns`, `@example`, `@throws` quando aplicável)                                                                                      |
+| Idioma               | UI da landing em **en-US (padrão)** com toggle **pt-BR** (`core/i18n.js`: `data-i18n*` no shell, `tr(STRINGS, …)` nas demos); comentários/JSDoc em pt-BR; identificáveis em inglês |
+| Tema                 | **claro é o padrão**; `theme-toggle` cicla light → dark → system (opt-in do visitante, persistido; CSS reage via `data-tema` no `<html>`)                                          |
+| Variáveis            | `const` por padrão, `let` quando reatribuída, **nunca** `var`                                                                                                                      |
+| Modo estrito         | implícito nos ES Modules (`"use strict"`)                                                                                                                                          |
+| DOM dinâmico         | `textContent`, `h()` ou `<template>` — **nunca** `innerHTML` com dados                                                                                                             |
+| Erros                | `Error` com `cause`, tipos custom (`DemoLoadError`), feedback via `<toast-notification>`                                                                                           |
+| APIs novas           | feature detection (`'x' in window`) + fallback + mensagem amigável                                                                                                                 |
+| Testes               | `node:test` + `node:assert/strict`, nomes descritivos em pt-BR, timers com `mock.timers`                                                                                           |
+| Estilo               | Prettier (`.prettierrc`), ESLint flat (`eslint.config.js`)                                                                                                                         |
 
 ### Padrão `h()` (hyperscript)
 

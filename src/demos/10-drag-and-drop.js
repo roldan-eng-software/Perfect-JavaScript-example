@@ -12,38 +12,114 @@
  *   setas cobrem teclado, leitores de tela e celular; cleanup persiste a ordem.
  */
 import { h, on, delegate } from '../core/dom.js';
+import { tr } from '../core/i18n.js';
 import { createStorage } from '../core/storage.js';
+
+/** Textos da demo por idioma — lidos via tr() no momento do render. */
+const STRINGS = {
+  'en-US': {
+    'coluna.fazer': 'To Do',
+    'coluna.fazendo': 'Doing',
+    'coluna.feito': 'Done',
+    'card.c1': 'Write the portfolio README',
+    'card.c2': 'Review button contrast',
+    'card.c3': 'Add tests for the masks',
+    'card.c4': 'Publish demo 10',
+    'card.c5': 'Study IntersectionObserver',
+    'card.c6': 'Refactor debounce',
+    'card.c7': 'Demo 09 — form validation',
+    'card.c8': 'ESLint setup',
+    'card.c9': 'Demo 01 — closures and HOF',
+    'card.c10': 'Light/dark theme',
+    'status.inicial': 'Ready — Tab focuses a card, ←/→ moves between columns, ↑/↓ reorders.',
+    'coluna.aria': 'Column {titulo}',
+    'contador.cartoes': '{total} cards',
+    'anuncio.movido': '{card} moved to {coluna}',
+    'anuncio.primeira': 'Card is already in the first column ({coluna}).',
+    'anuncio.ultima': 'Card is already in the last column ({coluna}).',
+    'anuncio.bordas': 'Card is already at the edge of {coluna}.',
+    'anuncio.reordenado': '{card} moved to position {posicao} of {coluna}',
+    'cartao.roledescription': 'kanban card',
+    'cartao.aria':
+      '{titulo}. Column {coluna}, position {indice} of {total}. Use the arrow keys to move.',
+    'mover.esquerda': 'Move "{titulo}" to the left',
+    'mover.direita': 'Move "{titulo}" to the right',
+    'instrucoes.teclado':
+      'Keyboard: Tab focuses a card · ←/→ moves between columns · ↑/↓ reorders · the ◀/▶ buttons also move. ',
+    'instrucoes.mouse': 'Mouse: drag the card to the desired column.',
+    'instrucoes.semDnD':
+      'Your browser does not have HTML5 Drag & Drop — use the arrow keys and the buttons.',
+    'aviso.touch':
+      'Touch: native drag & drop does not fire on touch screens — on a phone, use the ◀/▶ buttons or the keyboard (hardware keyboard/VoiceOver).',
+    titulo: 'Accessible Kanban (drag & drop + keyboard)',
+  },
+  'pt-BR': {
+    'coluna.fazer': 'A Fazer',
+    'coluna.fazendo': 'Fazendo',
+    'coluna.feito': 'Feito',
+    'card.c1': 'Escrever README do portfólio',
+    'card.c2': 'Revisar contraste dos botões',
+    'card.c3': 'Adicionar testes das máscaras',
+    'card.c4': 'Publicar demo 10',
+    'card.c5': 'Estudar IntersectionObserver',
+    'card.c6': 'Refatorar debounce',
+    'card.c7': 'Demo 09 — validação de forms',
+    'card.c8': 'Setup do ESLint',
+    'card.c9': 'Demo 01 — closures e HOF',
+    'card.c10': 'Tema claro/escuro',
+    'status.inicial': 'Pronto — Tab foca um cartão, ←/→ move entre colunas, ↑/↓ reordena.',
+    'coluna.aria': 'Coluna {titulo}',
+    'contador.cartoes': '{total} cartões',
+    'anuncio.movido': '{card} movido para {coluna}',
+    'anuncio.primeira': 'Card já está na coluna primeira ({coluna}).',
+    'anuncio.ultima': 'Card já está na coluna última ({coluna}).',
+    'anuncio.bordas': 'Card já está nas bordas de {coluna}.',
+    'anuncio.reordenado': '{card} movido para a posição {posicao} de {coluna}',
+    'cartao.roledescription': 'cartão do kanban',
+    'cartao.aria':
+      '{titulo}. Coluna {coluna}, posição {indice} de {total}. Use as setas para mover.',
+    'mover.esquerda': 'Mover "{titulo}" para a esquerda',
+    'mover.direita': 'Mover "{titulo}" para a direita',
+    'instrucoes.teclado':
+      'Teclado: Tab foca o cartão · ←/→ move entre colunas · ↑/↓ reordena · botões ◀/▶ também movem. ',
+    'instrucoes.mouse': 'Mouse: arraste o cartão até a coluna desejada.',
+    'instrucoes.semDnD': 'Seu navegador não tem HTML5 Drag & Drop — use as setas e os botões.',
+    'aviso.touch':
+      'Toque: drag & drop nativo não dispara em telas de toque — em celular, use os botões ◀/▶ ou o teclado (teclado físico/VO).',
+    titulo: 'Kanban acessível (drag & drop + teclado)',
+  },
+};
 
 /**
  * @typedef {object} Cartao
  * @property {string} id identificador estável (sobrevive a re-render)
- * @property {string} titulo texto do cartão
+ * @property {string} titulo chave do texto do cartão em STRINGS
  */
 
-/** Colunas do quadro, na ordem das setas ←/→. */
+/** Colunas do quadro, na ordem das setas ←/→ (titulo = chave em STRINGS). */
 const COLUNAS = [
-  { id: 'fazer', titulo: 'A Fazer' },
-  { id: 'fazendo', titulo: 'Fazendo' },
-  { id: 'feito', titulo: 'Feito' },
+  { id: 'fazer', titulo: 'coluna.fazer' },
+  { id: 'fazendo', titulo: 'coluna.fazendo' },
+  { id: 'feito', titulo: 'coluna.feito' },
 ];
 
 /** Estado inicial (3–4 cartões por coluna) — usado na 1ª visita. */
 const PADRAO = {
   fazer: /** @type {Cartao[]} */ ([
-    { id: 'c1', titulo: 'Escrever README do portfólio' },
-    { id: 'c2', titulo: 'Revisar contraste dos botões' },
-    { id: 'c3', titulo: 'Adicionar testes das máscaras' },
-    { id: 'c4', titulo: 'Publicar demo 10' },
+    { id: 'c1', titulo: 'card.c1' },
+    { id: 'c2', titulo: 'card.c2' },
+    { id: 'c3', titulo: 'card.c3' },
+    { id: 'c4', titulo: 'card.c4' },
   ]),
   fazendo: /** @type {Cartao[]} */ ([
-    { id: 'c5', titulo: 'Estudar IntersectionObserver' },
-    { id: 'c6', titulo: 'Refatorar debounce' },
-    { id: 'c7', titulo: 'Demo 09 — validação de forms' },
+    { id: 'c5', titulo: 'card.c5' },
+    { id: 'c6', titulo: 'card.c6' },
+    { id: 'c7', titulo: 'card.c7' },
   ]),
   feito: /** @type {Cartao[]} */ ([
-    { id: 'c8', titulo: 'Setup do ESLint' },
-    { id: 'c9', titulo: 'Demo 01 — closures e HOF' },
-    { id: 'c10', titulo: 'Tema claro/escuro' },
+    { id: 'c8', titulo: 'card.c8' },
+    { id: 'c9', titulo: 'card.c9' },
+    { id: 'c10', titulo: 'card.c10' },
   ]),
 };
 
@@ -105,7 +181,7 @@ export function init(container) {
     class: 'nota',
     role: 'status',
     'aria-live': 'polite',
-    text: 'Pronto — Tab foca um cartão, ←/→ move entre colunas, ↑/↓ reordena.',
+    text: tr(STRINGS, 'status.inicial'),
   });
 
   const quadroEl = h('div', { class: 'kanban' });
@@ -117,8 +193,12 @@ export function init(container) {
     const lista = h('div', { class: 'lista-cartoes', dataset: { coluna: def.id } });
     const raiz = h(
       'section',
-      { class: 'coluna', dataset: { coluna: def.id }, 'aria-label': `Coluna ${def.titulo}` },
-      h('h3', { text: def.titulo }),
+      {
+        class: 'coluna',
+        dataset: { coluna: def.id },
+        'aria-label': tr(STRINGS, 'coluna.aria', { titulo: tr(STRINGS, def.titulo) }),
+      },
+      h('h3', { text: tr(STRINGS, def.titulo) }),
       contador,
       lista,
     );
@@ -129,10 +209,11 @@ export function init(container) {
   // ── helpers de estado ──────────────────────────────────────────────────────
   /**
    * @param {string} colunaId id da coluna
-   * @returns {string} título legível da coluna
+   * @returns {string} título legível da coluna (no idioma ativo)
    */
   function tituloColuna(colunaId) {
-    return COLUNAS.find((def) => def.id === colunaId)?.titulo ?? colunaId;
+    const def = COLUNAS.find((item) => item.id === colunaId);
+    return def ? tr(STRINGS, def.titulo) : colunaId;
   }
 
   /**
@@ -177,7 +258,12 @@ export function init(container) {
     salvar();
     renderizar(id);
     // Texto exatamente no formato pedido: "Card X movido para Fazendo"
-    anunciar(`Card ${cartao.titulo} movido para ${tituloColuna(destinoId)}`);
+    anunciar(
+      tr(STRINGS, 'anuncio.movido', {
+        card: tr(STRINGS, cartao.titulo),
+        coluna: tituloColuna(destinoId),
+      }),
+    );
   }
 
   /**
@@ -192,8 +278,11 @@ export function init(container) {
     const indiceColuna = COLUNAS.findIndex((def) => def.id === atual.colunaId);
     const destino = COLUNAS[indiceColuna + deslocamento];
     if (!destino) {
-      const borda = deslocamento < 0 ? 'primeira' : 'última';
-      anunciar(`Card já está na coluna ${borda} (${tituloColuna(atual.colunaId)}).`);
+      anunciar(
+        tr(STRINGS, deslocamento < 0 ? 'anuncio.primeira' : 'anuncio.ultima', {
+          coluna: tituloColuna(atual.colunaId),
+        }),
+      );
       return;
     }
     moverCartao(id, destino.id, quadro[destino.id].length);
@@ -211,7 +300,7 @@ export function init(container) {
     const lista = quadro[atual.colunaId];
     const destino = atual.indice + deslocamento;
     if (destino < 0 || destino >= lista.length) {
-      anunciar(`Card já está nas bordas de ${tituloColuna(atual.colunaId)}.`);
+      anunciar(tr(STRINGS, 'anuncio.bordas', { coluna: tituloColuna(atual.colunaId) }));
       return;
     }
     const [cartao] = lista.splice(atual.indice, 1);
@@ -219,7 +308,11 @@ export function init(container) {
     salvar();
     renderizar(id);
     anunciar(
-      `Card ${cartao.titulo} movido para a posição ${destino + 1} de ${tituloColuna(atual.colunaId)}`,
+      tr(STRINGS, 'anuncio.reordenado', {
+        card: tr(STRINGS, cartao.titulo),
+        posicao: destino + 1,
+        coluna: tituloColuna(atual.colunaId),
+      }),
     );
   }
 
@@ -243,25 +336,28 @@ export function init(container) {
         draggable: suportaDnD ? 'true' : 'false',
         tabindex: '0',
         dataset: { id: cartao.id, coluna: colunaId },
-        'aria-roledescription': 'cartão do kanban',
-        'aria-label':
-          `${cartao.titulo}. Coluna ${tituloColuna(colunaId)}, ` +
-          `posição ${indice + 1} de ${total}. Use as setas para mover.`,
+        'aria-roledescription': tr(STRINGS, 'cartao.roledescription'),
+        'aria-label': tr(STRINGS, 'cartao.aria', {
+          titulo: tr(STRINGS, cartao.titulo),
+          coluna: tituloColuna(colunaId),
+          indice: indice + 1,
+          total,
+        }),
       },
-      h('span', { class: 'cartao-titulo', text: cartao.titulo }),
+      h('span', { class: 'cartao-titulo', text: tr(STRINGS, cartao.titulo) }),
       h(
         'div',
         { class: 'botoes' },
         h('button', {
           type: 'button',
           text: '◀',
-          'aria-label': `Mover "${cartao.titulo}" para a esquerda`,
+          'aria-label': tr(STRINGS, 'mover.esquerda', { titulo: tr(STRINGS, cartao.titulo) }),
           on: { click: focar(-1) },
         }),
         h('button', {
           type: 'button',
           text: '▶',
-          'aria-label': `Mover "${cartao.titulo}" para a direita`,
+          'aria-label': tr(STRINGS, 'mover.direita', { titulo: tr(STRINGS, cartao.titulo) }),
           on: { click: focar(1) },
         }),
       ),
@@ -278,7 +374,7 @@ export function init(container) {
       const info = colunasEl.get(def.id);
       if (!info) continue;
       const cartoes = quadro[def.id];
-      info.contador.textContent = `${cartoes.length} cartões`;
+      info.contador.textContent = tr(STRINGS, 'contador.cartoes', { total: cartoes.length });
       info.lista.replaceChildren(
         ...cartoes.map((cartao, indice) => criarCartao(cartao, def.id, indice, cartoes.length)),
       );
@@ -364,25 +460,17 @@ export function init(container) {
   const instrucoes = h('p', {
     class: 'nota',
     text:
-      'Teclado: Tab foca o cartão · ←/→ move entre colunas · ↑/↓ reordena · botões ◀/▶ também movem. ' +
-      (suportaDnD
-        ? 'Mouse: arraste o cartão até a coluna desejada.'
-        : 'Seu navegador não tem HTML5 Drag & Drop — use as setas e os botões.'),
+      tr(STRINGS, 'instrucoes.teclado') +
+      (suportaDnD ? tr(STRINGS, 'instrucoes.mouse') : tr(STRINGS, 'instrucoes.semDnD')),
   });
 
   const avisoTouch = h('p', {
     class: 'nota',
-    text: 'Toque: drag & drop nativo não dispara em telas de toque — em celular, use os botões ◀/▶ ou o teclado (teclado físico/VO).',
+    text: tr(STRINGS, 'aviso.touch'),
   });
 
   container.append(
-    h(
-      'div',
-      { class: 'linha' },
-      h('h3', { text: 'Kanban acessível (drag & drop + teclado)' }),
-      instrucoes,
-      avisoTouch,
-    ),
+    h('div', { class: 'linha' }, h('h3', { text: tr(STRINGS, 'titulo') }), instrucoes, avisoTouch),
     quadroEl,
     status,
   );

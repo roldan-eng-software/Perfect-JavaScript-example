@@ -19,6 +19,7 @@ import './components/accessible-tabs.js';
 import { $, $$, on } from './core/dom.js';
 import { createRouter } from './core/router.js';
 import { logger } from './core/logger.js';
+import { aplicarTraducoes, getLang, onLangChange, SHELL, toggleLang, tr } from './core/i18n.js';
 
 /** Erro customizado: marca falhas de carregamento de demo com causa original. */
 export class DemoLoadError extends Error {
@@ -36,10 +37,14 @@ export class DemoLoadError extends Error {
  * @typedef {object} DemoState
  * @property {() => void} cleanup função de limpeza fornecida pela demo
  * @property {boolean} emAndamento se o init está em curso (evita dupla carga)
+ * @property {HTMLElement} container onde a demo foi montada (para re-init no idioma)
  */
 
 /** Registry de demos ativas: nome → estado (Map, não objeto global). */
 const demosAtivas = new Map();
+
+/** Módulos já importados alguma vez (contador do hero não duplica no re-init). */
+const jaImportados = new Set();
 
 /** Total de módulos de demo já importados (contador do hero). */
 let modulosCarregados = 1; // main.js conta como o primeiro
@@ -59,7 +64,7 @@ export async function carregarDemo(nome, container) {
   const estado = demosAtivas.get(nome);
   if (estado?.cleanup || estado?.emAndamento) return null;
 
-  demosAtivas.set(nome, { cleanup: () => {}, emAndamento: true });
+  demosAtivas.set(nome, { cleanup: () => {}, emAndamento: true, container });
 
   try {
     // import() dinâmico: o bundler não existe, o navegador baixa só quando pede
@@ -75,9 +80,12 @@ export async function carregarDemo(nome, container) {
         cause: new Error('init() não retornou função de cleanup'),
       });
     }
-    demosAtivas.set(nome, { cleanup, emAndamento: false });
-    modulosCarregados += 1;
-    atualizarContador();
+    demosAtivas.set(nome, { cleanup, emAndamento: false, container });
+    if (!jaImportados.has(nome)) {
+      jaImportados.add(nome);
+      modulosCarregados += 1;
+      atualizarContador();
+    }
     logger.debug(`demo "${nome}" carregada (total: ${modulosCarregados})`);
     return cleanup;
   } catch (erro) {
@@ -85,7 +93,7 @@ export async function carregarDemo(nome, container) {
     const erroEnvolvido =
       erro instanceof DemoLoadError ? erro : new DemoLoadError(nome, { cause: erro });
     logger.error(erroEnvolvido.message, erroEnvolvido.cause);
-    mostrarFalhaNoContainer(container, erroEnvolvido);
+    mostrarFalhaNoContainer(container, nome, erroEnvolvido);
     return null;
   }
 }
@@ -115,14 +123,15 @@ export function finalizarDemo(nome) {
  * @param {HTMLElement} container alvo
  * @param {Error} erro erro envolvido
  */
-function mostrarFalhaNoContainer(container, erro) {
+function mostrarFalhaNoContainer(container, nome, erro) {
   const aviso = document.createElement('div');
   aviso.className = 'nota erro';
   aviso.setAttribute('role', 'status');
   aviso.setAttribute('aria-live', 'polite');
-  aviso.textContent =
-    `Não foi possível carregar esta demo (${erro.cause?.message ?? erro.message}). ` +
-    'Se abriu via file://, use "npm run serve" — módulos e fetch não funcionam por file://.';
+  aviso.textContent = tr(SHELL, 'error.demo', {
+    name: nome,
+    reason: String(erro.cause?.message ?? erro.message),
+  });
   container.replaceChildren(aviso);
 }
 
@@ -187,7 +196,8 @@ function configurarMenu() {
   const alternar = () => {
     const aberto = botao.getAttribute('aria-expanded') === 'true';
     botao.setAttribute('aria-expanded', String(!aberto));
-    botao.setAttribute('aria-label', aberto ? 'Abrir menu' : 'Fechar menu');
+    // Rótulo no idioma ativo (aberto → oferece fechar, e vice-versa)
+    botao.setAttribute('aria-label', tr(SHELL, aberto ? 'menu.open' : 'menu.close'));
     menu.classList.toggle('aberto', !aberto);
   };
 
@@ -275,6 +285,43 @@ export function reducedMotion() {
 }
 
 /**
+ * Configura o botão de idioma do topo (en-US ↔ pt-BR) e a re-inicialização
+ * das demos ativas quando o idioma muda (as demos renderizam no init).
+ *
+ * @returns {() => void} cleanup dos listeners
+ */
+function configurarIdioma() {
+  const botao = $('#btn-idioma');
+  const remocoes = [];
+
+  if (botao) {
+    remocoes.push(on(botao, 'click', () => toggleLang()));
+  }
+
+  // Troca de idioma: shell já é aplicado por setLang; demos re-init para
+  // renderizarem suas strings no novo idioma.
+  remocoes.push(
+    onLangChange(() => {
+      logger.debug(`idioma → ${getLang()}`);
+      for (const [nome, estado] of [...demosAtivas]) {
+        if (!estado.cleanup || !estado.container) continue;
+        try {
+          estado.cleanup();
+        } catch (erro) {
+          logger.warn(`cleanup da demo "${nome}" na troca de idioma:`, erro);
+        }
+        demosAtivas.delete(nome);
+        if (estado.container.isConnected) {
+          void carregarDemo(nome, estado.container);
+        }
+      }
+    }),
+  );
+
+  return () => remocoes.forEach((fn) => fn());
+}
+
+/**
  * Inicialização da aplicação. Executa quando o DOM está pronto.
  *
  * @returns {() => void} cleanup geral (usado nos testes/e2e)
@@ -282,12 +329,17 @@ export function reducedMotion() {
  * const cleanup = bootstrap();
  */
 export function bootstrap() {
-  logger.info('Perfect JavaScript Example iniciando');
+  logger.info('Perfect JavaScript Example starting');
+
+  // i18n: aplica o idioma salvo (default en-US) ao shell estático
+  aplicarTraducoes();
+
   const cleanups = [
     configurarLazyLoading(),
     configurarMenu(),
     configurarScrollSpy(),
     configurarRouter(),
+    configurarIdioma(),
   ];
 
   // Log de desempenho da carga inicial (performance API)

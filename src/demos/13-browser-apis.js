@@ -11,6 +11,63 @@
  *   criados com on() — inclusive os de document/window, que não morrem sozinhos.
  */
 import { h, on } from '../core/dom.js';
+import { tr } from '../core/i18n.js';
+
+/** Textos de interface (chrome) da demo: botões, rótulos e mensagens de status. */
+const STRINGS = {
+  'en-US': {
+    'clip.unavailable': 'Clipboard API unavailable (requires HTTPS or localhost).',
+    'clip.sample': 'Copied via the Clipboard API — Perfect JavaScript Example ✔',
+    'clip.copied': '✔ text copied to the clipboard.',
+    'clip.copyFail': '✖ copy failed: {erro}',
+    'clip.readUnavailable': 'Reading the clipboard is unavailable here.',
+    'clip.read': '✔ read: {trecho}',
+    'clip.empty': 'clipboard empty.',
+    'clip.readFail': '✖ permission denied/error: {erro}',
+    'btn.copy': 'Copy text',
+    'btn.read': 'Read from clipboard',
+    'clip.note': 'Works on HTTPS/localhost; the browser may ask for permission before reading.',
+    'media.title': 'matchMedia (system preferences)',
+    'label.state': 'state: ',
+    'media.unavailable': 'matchMedia unavailable in this browser.',
+    'media.note': 'Switch the OS theme/contrast and watch the text change live.',
+    'media.out': 'color scheme: {esquema} · reduced motion: {movimento}',
+    yes: 'yes',
+    no: 'no',
+    'state.out': 'visibilityState: {visibility} · connection: {conexao}',
+    'state.note': 'Switch tabs or go offline: visibilitychange/online/offline fire immediately.',
+    'uuid.unavailable': 'crypto unavailable in this context.',
+    'btn.uuid': 'Generate UUID v4',
+    'uuid.note': 'No dependencies: 16 random bytes + version/variant bits formatted as 8-4-4-4-12.',
+  },
+  'pt-BR': {
+    'clip.unavailable': 'Clipboard API indisponível (requer HTTPS ou localhost).',
+    'clip.sample': 'Copiado pela Clipboard API — Perfect JavaScript Example ✔',
+    'clip.copied': '✔ texto copiado para a área de transferência.',
+    'clip.copyFail': '✖ falha ao copiar: {erro}',
+    'clip.readUnavailable': 'Leitura da área de transferência indisponível aqui.',
+    'clip.read': '✔ lido: {trecho}',
+    'clip.empty': 'área de transferência vazia.',
+    'clip.readFail': '✖ permissão negada/erro: {erro}',
+    'btn.copy': 'Copiar texto',
+    'btn.read': 'Ler da área de transferência',
+    'clip.note': 'Funciona em HTTPS/localhost; o navegador pode pedir permissão antes de ler.',
+    'media.title': 'matchMedia (preferências do sistema)',
+    'label.state': 'estado: ',
+    'media.unavailable': 'matchMedia indisponível neste navegador.',
+    'media.note': 'Troque o tema/contraste do sistema operacional e veja o texto mudar ao vivo.',
+    'media.out': 'esquema de cor: {esquema} · movimento reduzido: {movimento}',
+    yes: 'sim',
+    no: 'não',
+    'state.out': 'visibilityState: {visibility} · conexão: {conexao}',
+    'state.note':
+      'Troque de aba ou desative a rede: visibilitychange/online/offline disparam na hora.',
+    'uuid.unavailable': 'crypto indisponível neste contexto.',
+    'btn.uuid': 'Gerar UUID v4',
+    'uuid.note':
+      'Sem dependências: 16 bytes aleatórios + bits de versão/variante formatados como 8-4-4-4-12.',
+  },
+};
 
 /**
  * Inicializa a demo de APIs do navegador.
@@ -39,16 +96,16 @@ export function init(container) {
    */
   async function copiar() {
     if (!podeCopiar) {
-      saidaClipboard.textContent = 'Clipboard API indisponível (requer HTTPS ou localhost).';
+      saidaClipboard.textContent = tr(STRINGS, 'clip.unavailable');
       return;
     }
     try {
-      await navigator.clipboard.writeText(
-        'Copiado pela Clipboard API — Perfect JavaScript Example ✔',
-      );
-      saidaClipboard.textContent = '✔ texto copiado para a área de transferência.';
+      await navigator.clipboard.writeText(tr(STRINGS, 'clip.sample'));
+      saidaClipboard.textContent = tr(STRINGS, 'clip.copied');
     } catch (erro) {
-      saidaClipboard.textContent = `✖ falha ao copiar: ${erro instanceof Error ? erro.message : erro}`;
+      saidaClipboard.textContent = tr(STRINGS, 'clip.copyFail', {
+        erro: erro instanceof Error ? erro.message : String(erro),
+      });
     }
   }
 
@@ -59,16 +116,20 @@ export function init(container) {
    */
   async function lerAreaDeTransferencia() {
     if (!podeLer) {
-      saidaClipboard.textContent = 'Leitura da área de transferência indisponível aqui.';
+      saidaClipboard.textContent = tr(STRINGS, 'clip.readUnavailable');
       return;
     }
     try {
       const texto = await navigator.clipboard.readText();
       saidaClipboard.textContent = texto
-        ? `✔ lido: ${texto.slice(0, 80)}${texto.length > 80 ? '…' : ''}`
-        : 'área de transferência vazia.';
+        ? tr(STRINGS, 'clip.read', {
+            trecho: `${texto.slice(0, 80)}${texto.length > 80 ? '…' : ''}`,
+          })
+        : tr(STRINGS, 'clip.empty');
     } catch (erro) {
-      saidaClipboard.textContent = `✖ permissão negada/erro: ${erro instanceof Error ? erro.message : erro}`;
+      saidaClipboard.textContent = tr(STRINGS, 'clip.readFail', {
+        erro: erro instanceof Error ? erro.message : String(erro),
+      });
     }
   }
 
@@ -79,17 +140,21 @@ export function init(container) {
     h(
       'div',
       { class: 'botoes' },
-      h('button', { type: 'button', text: 'Copiar texto', on: { click: () => void copiar() } }),
       h('button', {
         type: 'button',
-        text: 'Ler da área de transferência',
+        text: tr(STRINGS, 'btn.copy'),
+        on: { click: () => void copiar() },
+      }),
+      h('button', {
+        type: 'button',
+        text: tr(STRINGS, 'btn.read'),
         on: { click: () => void lerAreaDeTransferencia() },
       }),
       saidaClipboard,
     ),
     h('p', {
       class: 'nota',
-      text: 'Funciona em HTTPS/localhost; o navegador pode pedir permissão antes de ler.',
+      text: tr(STRINGS, 'clip.note'),
     }),
   );
 
@@ -105,9 +170,10 @@ export function init(container) {
 
   function atualizarMedia() {
     if (!mqEsquema || !mqMovimento) return;
-    saidaMedia.textContent =
-      `esquema de cor: ${mqEsquema.matches ? 'dark' : 'light'} · ` +
-      `movimento reduzido: ${mqMovimento.matches ? 'sim' : 'não'}`;
+    saidaMedia.textContent = tr(STRINGS, 'media.out', {
+      esquema: mqEsquema.matches ? 'dark' : 'light',
+      movimento: mqMovimento.matches ? tr(STRINGS, 'yes') : tr(STRINGS, 'no'),
+    });
   }
 
   if (mqEsquema && mqMovimento) {
@@ -121,13 +187,13 @@ export function init(container) {
   const painelMedia = h(
     'div',
     { class: 'linha' },
-    h('h3', { text: 'matchMedia (preferências do sistema)' }),
+    h('h3', { text: tr(STRINGS, 'media.title') }),
     temMatchMedia
-      ? h('p', { class: 'nota' }, 'estado: ', saidaMedia)
-      : h('p', { class: 'nota', text: 'matchMedia indisponível neste navegador.' }),
+      ? h('p', { class: 'nota' }, tr(STRINGS, 'label.state'), saidaMedia)
+      : h('p', { class: 'nota', text: tr(STRINGS, 'media.unavailable') }),
     h('p', {
       class: 'nota',
-      text: 'Troque o tema/contraste do sistema operacional e veja o texto mudar ao vivo.',
+      text: tr(STRINGS, 'media.note'),
     }),
   );
 
@@ -136,7 +202,10 @@ export function init(container) {
 
   function atualizarEstado() {
     // visibilityState: 'visible' | 'hidden' — onLine: boolean (melhor esforço)
-    saidaEstado.textContent = `visibilityState: ${document.visibilityState} · conexão: ${navigator.onLine ? 'online' : 'offline'}`;
+    saidaEstado.textContent = tr(STRINGS, 'state.out', {
+      visibility: document.visibilityState,
+      conexao: navigator.onLine ? 'online' : 'offline',
+    });
   }
 
   // Estes listeners são em document/window — NÃO morrem com o container,
@@ -152,10 +221,10 @@ export function init(container) {
     'div',
     { class: 'linha' },
     h('h3', { text: 'Page Visibility + online/offline' }),
-    h('p', { class: 'nota' }, 'estado: ', saidaEstado),
+    h('p', { class: 'nota' }, tr(STRINGS, 'label.state'), saidaEstado),
     h('p', {
       class: 'nota',
-      text: 'Troque de aba ou desative a rede: visibilitychange/online/offline disparam na hora.',
+      text: tr(STRINGS, 'state.note'),
     }),
   );
 
@@ -180,7 +249,7 @@ export function init(container) {
         `${hex.slice(16, 20)}-${hex.slice(20)}`;
       return;
     }
-    saidaUuid.textContent = 'crypto indisponível neste contexto.';
+    saidaUuid.textContent = tr(STRINGS, 'uuid.unavailable');
   }
 
   const painelUuid = h(
@@ -190,12 +259,12 @@ export function init(container) {
     h(
       'div',
       { class: 'botoes' },
-      h('button', { type: 'button', text: 'Gerar UUID v4', on: { click: gerarUuid } }),
+      h('button', { type: 'button', text: tr(STRINGS, 'btn.uuid'), on: { click: gerarUuid } }),
       saidaUuid,
     ),
     h('p', {
       class: 'nota',
-      text: 'Sem dependências: 16 bytes aleatórios + bits de versão/variante formatados como 8-4-4-4-12.',
+      text: tr(STRINGS, 'uuid.note'),
     }),
   );
 

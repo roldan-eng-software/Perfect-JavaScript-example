@@ -11,6 +11,7 @@
  *   h({ on }) morrem junto com o DOM do container.
  */
 import { h } from '../core/dom.js';
+import { tr } from '../core/i18n.js';
 import { sleep } from '../utils/sleep.js';
 import { attemptWithRetry } from '../utils/retry.js';
 
@@ -26,6 +27,130 @@ const URL_INVALIDA = new URL('../../data/nao-existe.json', import.meta.url);
  */
 const ESTADOS = Object.freeze(['ocioso', 'carregando', 'sucesso', 'erro', 'vazio']);
 
+/** Dicionário de strings da demo — tr() lê o idioma ativo em tempo de render. */
+const STRINGS = {
+  'en-US': {
+    'machine.title': 'State machine (fetch)',
+    'state.initial': 'state: idle',
+    'state.line': 'state: {estado} — {detalhe}',
+    'state.history': '{estado}: {detalhe}',
+    'state.ocioso': 'idle',
+    'state.carregando': 'loading',
+    'state.sucesso': 'success',
+    'state.erro': 'error',
+    'state.vazio': 'empty',
+    'state.unknown': 'state machine: unknown state "{estado}".',
+    'error.http': 'HTTP {status} while fetching {arquivo}',
+    'error.generic': 'error',
+    'detail.waiting': '{nome} — waiting for response…',
+    'detail.noItems': '{nome} responded with no items',
+    'detail.loaded': '{nome}: {qtd} items loaded',
+    'items.none': 'No items to show (empty list).',
+    'all.waiting': 'Promise.all — projects + quotes in parallel…',
+    'all.success': 'Promise.all ok — {total} items total',
+    'empty.simulated': 'simulated response: 0 items',
+    'empty.note': 'Empty state ≠ error: HTTP ok, there is just nothing to show.',
+    'btn.loadProjects': 'Load projects.json',
+    'btn.loadQuotes': 'Load quotes.json',
+    'btn.all': 'Promise.all (both)',
+    'btn.allSettled': 'Promise.allSettled (3 loads)',
+    'btn.simulateEmpty': 'Simulate empty response',
+    'fetch.note':
+      'fetch uses new URL(..., import.meta.url): the JSON path is resolved relative to this module.',
+    'settled.waiting': 'Promise.allSettled — 3 loads (one will fail)…',
+    'settled.ok': '✔ {rotulo}: fulfilled ({qtd} items)',
+    'settled.rejected': '✘ {rotulo}: rejected ({motivo})',
+    'reason.failed': 'failed',
+    'settled.summary': 'allSettled: {sucessos}/3 fulfilled (no exception escaped)',
+    'race.success': 'race: request won in {ms} ms',
+    'race.error': 'race: timeout won in {ms} ms ({nome}) — request discarded',
+    'race.btnSlow': 'Race: slow 1500ms × timeout 400ms',
+    'race.btnFast': 'Race: fast 200ms × timeout 600ms',
+    'race.note':
+      'The losing side is aborted in the finally: it cancels the sleep and avoids ghost work.',
+    'cancel.inProgress': '⏳ in progress (3000 ms)… click "Cancel"',
+    'cancel.done': '✔ completed — the user did NOT cancel in time.',
+    'cancel.cancelled': '✖ cancelled by the user ({erro})',
+    'cancel.nothing': 'Nothing in flight to cancel.',
+    'cancel.title': 'AbortController: cancel an in-flight request',
+    'btn.start': 'Start simulation (3s)',
+    'btn.cancel': 'Cancel',
+    'cancel.note':
+      'The same signal goes to fetch/sleep: a single .abort() ends the whole operation.',
+    'retry.starting': 'retry — attempt 1 of up to 4…',
+    'retry.fakeFailure': 'simulated failure on attempt {n}',
+    'retry.attemptFailed': 'attempt {n} failed ({erro}) → new attempt',
+    'retry.success': 'success on attempt {n}: {qtd} quotes',
+    'retry.ok': 'retry ok after {n} attempts',
+    'retry.exhausted': 'exhausted: {erro}',
+    'retry.exhaustedAll': 'retry exhausted all attempts',
+    'retry.title': 'attemptWithRetry: 2 failures then success',
+    'btn.runRetry': 'Run retry',
+    'retry.note':
+      'Exponential backoff: 100 ms, 200 ms, 400 ms between attempts (instant here via injected sleep).',
+  },
+  'pt-BR': {
+    'machine.title': 'Máquina de estados (fetch)',
+    'state.initial': 'estado: ocioso',
+    'state.line': 'estado: {estado} — {detalhe}',
+    'state.history': '{estado}: {detalhe}',
+    'state.ocioso': 'ocioso',
+    'state.carregando': 'carregando',
+    'state.sucesso': 'sucesso',
+    'state.erro': 'erro',
+    'state.vazio': 'vazio',
+    'state.unknown': 'máquina de estados: estado desconhecido "{estado}".',
+    'error.http': 'HTTP {status} ao buscar {arquivo}',
+    'error.generic': 'erro',
+    'detail.waiting': '{nome} — aguardando resposta…',
+    'detail.noItems': '{nome} respondeu sem itens',
+    'detail.loaded': '{nome}: {qtd} itens carregados',
+    'items.none': 'Nenhum item para exibir (lista vazia).',
+    'all.waiting': 'Promise.all — projects + quotes em paralelo…',
+    'all.success': 'Promise.all ok — {total} itens no total',
+    'empty.simulated': 'resposta simulada: 0 itens',
+    'empty.note': 'Estado vazio ≠ erro: HTTP ok, só não há o que mostrar.',
+    'btn.loadProjects': 'Carregar projects.json',
+    'btn.loadQuotes': 'Carregar quotes.json',
+    'btn.all': 'Promise.all (ambos)',
+    'btn.allSettled': 'Promise.allSettled (3 cargas)',
+    'btn.simulateEmpty': 'Simular resposta vazia',
+    'fetch.note':
+      'fetch usa new URL(..., import.meta.url): o caminho do JSON é resolvido relativo a este módulo.',
+    'settled.waiting': 'Promise.allSettled — 3 cargas (uma vai falhar)…',
+    'settled.ok': '✔ {rotulo}: fulfilled ({qtd} itens)',
+    'settled.rejected': '✘ {rotulo}: rejected ({motivo})',
+    'reason.failed': 'falhou',
+    'settled.summary': 'allSettled: {sucessos}/3 fulfilled (nenhuma exceção escapou)',
+    'race.success': 'race: requisição venceu em {ms} ms',
+    'race.error': 'race: timeout venceu em {ms} ms ({nome}) — requisição descartada',
+    'race.btnSlow': 'Race: lenta 1500ms × timeout 400ms',
+    'race.btnFast': 'Race: rápida 200ms × timeout 600ms',
+    'race.note':
+      'O lado perdedor é abortado no finally: cancela o sleep e evita trabalho fantasma.',
+    'cancel.inProgress': '⏳ em andamento (3000 ms)… clique em "Cancelar"',
+    'cancel.done': '✔ concluído — o usuário NÃO cancelou a tempo.',
+    'cancel.cancelled': '✖ cancelado pelo usuário ({erro})',
+    'cancel.nothing': 'Nada em voo para cancelar.',
+    'cancel.title': 'AbortController: cancelar requisição em voo',
+    'btn.start': 'Iniciar simulação (3s)',
+    'btn.cancel': 'Cancelar',
+    'cancel.note':
+      'O mesmo signal vai para fetch/sleep: um único .abort() encerra a operação inteira.',
+    'retry.starting': 'retry — tentativa 1 de até 4…',
+    'retry.fakeFailure': 'falha simulada na tentativa {n}',
+    'retry.attemptFailed': 'tentativa {n} falhou ({erro}) → nova tentativa',
+    'retry.success': 'sucesso na tentativa {n}: {qtd} citações',
+    'retry.ok': 'retry ok após {n} tentativas',
+    'retry.exhausted': 'esgotado: {erro}',
+    'retry.exhaustedAll': 'retry esgotou as tentativas',
+    'retry.title': 'attemptWithRetry: falha 2× e sucesso',
+    'btn.runRetry': 'Executar retry',
+    'retry.note':
+      'Backoff exponencial: 100 ms, 200 ms, 400 ms entre tentativas (aqui instantâneos via sleep injetado).',
+  },
+};
+
 /**
  * Cria a região visual da máquina de estados: estado atual + histórico curto.
  *
@@ -40,23 +165,24 @@ const ESTADOS = Object.freeze(['ocioso', 'carregando', 'sucesso', 'erro', 'vazio
  * maquina.transicionar('carregando', 'projects.json');
  */
 function criarMaquinaEstados() {
-  const atual = h('p', { class: 'nota', text: 'estado: ocioso' });
+  const atual = h('p', { class: 'nota', text: tr(STRINGS, 'state.initial') });
   const historico = h('ul', { class: 'nota' });
   const regiao = h(
     'div',
     { class: 'linha', role: 'status', 'aria-live': 'polite' },
-    h('h3', { text: 'Máquina de estados (fetch)' }),
+    h('h3', { text: tr(STRINGS, 'machine.title') }),
     atual,
     historico,
   );
 
   function transicionar(estado, detalhe) {
     if (!ESTADOS.includes(estado)) {
-      throw new RangeError(`máquina de estados: estado desconhecido "${estado}".`);
+      throw new RangeError(tr(STRINGS, 'state.unknown', { estado }));
     }
-    atual.textContent = `estado: ${estado} — ${detalhe}`;
+    const nome = tr(STRINGS, `state.${estado}`);
+    atual.textContent = tr(STRINGS, 'state.line', { estado: nome, detalhe });
     // prepend + recorte mantém o histórico legível (máx. 5 entradas)
-    historico.prepend(h('li', { text: `${estado}: ${detalhe}` }));
+    historico.prepend(h('li', { text: tr(STRINGS, 'state.history', { estado: nome, detalhe }) }));
     while (historico.childElementCount > 5) historico.lastElementChild?.remove();
   }
 
@@ -93,7 +219,8 @@ export function init(container) {
   async function buscarJson(caminho, signal) {
     const resposta = await fetch(caminho, { signal });
     if (!resposta.ok) {
-      throw new Error(`HTTP ${resposta.status} ao buscar ${caminho.pathname.split('/').pop()}`);
+      const nomeArquivo = caminho.pathname.split('/').pop();
+      throw new Error(tr(STRINGS, 'error.http', { status: resposta.status, arquivo: nomeArquivo }));
     }
     return resposta.json();
   }
@@ -145,7 +272,7 @@ export function init(container) {
   function renderizarItens(destino, itens, formato) {
     destino.replaceChildren();
     if (itens.length === 0) {
-      destino.append(h('p', { class: 'nota', text: 'Nenhum item para exibir (lista vazia).' }));
+      destino.append(h('p', { class: 'nota', text: tr(STRINGS, 'items.none') }));
       return;
     }
     for (const item of itens) destino.append(h('p', { text: formato(item) }));
@@ -162,22 +289,20 @@ export function init(container) {
    */
   async function carregarRecurso(nome, caminho, destino) {
     const controller = novoController();
-    maquina.transicionar('carregando', `${nome} — aguardando resposta…`);
+    maquina.transicionar('carregando', tr(STRINGS, 'detail.waiting', { nome }));
     try {
       const dados = await buscarJson(caminho, controller.signal);
       const itens = extrairItens(dados);
       if (itens.length === 0) {
         // estado vazio: resposta OK mas sem itens — ≠ de erro
-        maquina.transicionar('vazio', `${nome} respondeu sem itens`);
+        maquina.transicionar('vazio', tr(STRINGS, 'detail.noItems', { nome }));
       } else {
-        maquina.transicionar('sucesso', `${nome}: ${itens.length} itens carregados`);
+        maquina.transicionar('sucesso', tr(STRINGS, 'detail.loaded', { nome, qtd: itens.length }));
       }
       renderizarItens(destino, itens, formatoDe(nome));
     } catch (erro) {
-      maquina.transicionar(
-        'erro',
-        `${nome}: ${erro instanceof Error ? erro.message : String(erro)}`,
-      );
+      const mensagem = erro instanceof Error ? erro.message : String(erro);
+      maquina.transicionar('erro', `${nome}: ${mensagem}`);
       renderizarItens(destino, [], formatoDe(nome));
     } finally {
       controllers.delete(controller);
@@ -206,14 +331,14 @@ export function init(container) {
    */
   async function carregarTudoComAll() {
     const controller = novoController();
-    maquina.transicionar('carregando', 'Promise.all — projects + quotes em paralelo…');
+    maquina.transicionar('carregando', tr(STRINGS, 'all.waiting'));
     try {
       const [projects, quotes] = await Promise.all([
         buscarJson(URL_PROJECTS, controller.signal),
         buscarJson(URL_QUOTES, controller.signal),
       ]);
       const total = extrairItens(projects).length + extrairItens(quotes).length;
-      maquina.transicionar('sucesso', `Promise.all ok — ${total} itens no total`);
+      maquina.transicionar('sucesso', tr(STRINGS, 'all.success', { total }));
       renderizarItens(saidaProjects, extrairItens(projects), (p) => `${p.name} ★ ${p.stars}`);
       renderizarItens(saidaQuotes, extrairItens(quotes), (q) => `“${q.text}” — ${q.author}`);
     } catch (erro) {
@@ -233,7 +358,7 @@ export function init(container) {
    * @returns {Promise<void>} resolve quando as três terminam
    */
   async function carregarComAllSettled() {
-    maquina.transicionar('carregando', 'Promise.allSettled — 3 cargas (uma vai falhar)…');
+    maquina.transicionar('carregando', tr(STRINGS, 'settled.waiting'));
     const controller = novoController();
     const rotulos = ['projects.json', 'quotes.json', 'nao-existe.json'];
     const resultados = await Promise.allSettled([
@@ -249,26 +374,31 @@ export function init(container) {
       if (resultado.status === 'fulfilled') {
         sucessos += 1;
         const qtd = extrairItens(resultado.value).length;
-        saidaSettled.append(h('p', { text: `✔ ${rotulos[i]}: fulfilled (${qtd} itens)` }));
+        saidaSettled.append(
+          h('p', { text: tr(STRINGS, 'settled.ok', { rotulo: rotulos[i], qtd }) }),
+        );
       } else {
-        const motivo = resultado.reason instanceof Error ? resultado.reason.message : 'falhou';
-        saidaSettled.append(h('p', { text: `✘ ${rotulos[i]}: rejected (${motivo})` }));
+        const bruto = resultado.reason;
+        const motivo = bruto instanceof Error ? bruto.message : tr(STRINGS, 'reason.failed');
+        saidaSettled.append(
+          h('p', { text: tr(STRINGS, 'settled.rejected', { rotulo: rotulos[i], motivo }) }),
+        );
       }
     });
 
     // 2 fulfilled + 1 rejected → sucesso parcial é esperado, não é erro
     maquina.transicionar(
       sucessos === 3 ? 'sucesso' : 'erro',
-      `allSettled: ${sucessos}/3 fulfilled (nenhuma exceção escapou)`,
+      tr(STRINGS, 'settled.summary', { sucessos }),
     );
   }
 
   /** Simula servidor respondendo JSON válido porém sem itens (estado "vazio"). */
   function simularVazio() {
-    maquina.transicionar('vazio', 'resposta simulada: 0 itens');
+    maquina.transicionar('vazio', tr(STRINGS, 'empty.simulated'));
     renderizarItens(saidaProjects, [], (p) => p.name);
     renderizarItens(saidaQuotes, [], (q) => q.text);
-    saidaVazio.textContent = 'Estado vazio ≠ erro: HTTP ok, só não há o que mostrar.';
+    saidaVazio.textContent = tr(STRINGS, 'empty.note');
   }
 
   const painelFetch = h(
@@ -280,25 +410,29 @@ export function init(container) {
       { class: 'botoes' },
       h('button', {
         type: 'button',
-        text: 'Carregar projects.json',
+        text: tr(STRINGS, 'btn.loadProjects'),
         on: { click: () => void carregarRecurso('projects.json', URL_PROJECTS, saidaProjects) },
       }),
       h('button', {
         type: 'button',
-        text: 'Carregar quotes.json',
+        text: tr(STRINGS, 'btn.loadQuotes'),
         on: { click: () => void carregarRecurso('quotes.json', URL_QUOTES, saidaQuotes) },
       }),
       h('button', {
         type: 'button',
-        text: 'Promise.all (ambos)',
+        text: tr(STRINGS, 'btn.all'),
         on: { click: () => void carregarTudoComAll() },
       }),
       h('button', {
         type: 'button',
-        text: 'Promise.allSettled (3 cargas)',
+        text: tr(STRINGS, 'btn.allSettled'),
         on: { click: () => void carregarComAllSettled() },
       }),
-      h('button', { type: 'button', text: 'Simular resposta vazia', on: { click: simularVazio } }),
+      h('button', {
+        type: 'button',
+        text: tr(STRINGS, 'btn.simulateEmpty'),
+        on: { click: simularVazio },
+      }),
     ),
     saidaProjects,
     saidaQuotes,
@@ -306,7 +440,7 @@ export function init(container) {
     saidaVazio,
     h('p', {
       class: 'nota',
-      text: 'fetch usa new URL(..., import.meta.url): o caminho do JSON é resolvido relativo a este módulo.',
+      text: tr(STRINGS, 'fetch.note'),
     }),
   );
 
@@ -356,14 +490,11 @@ export function init(container) {
       // Lado B: timeout autodestrutivo
       await Promise.race([lenta, promessaDeTimeout(msTimeout)]);
       const ms = Math.round(performance.now() - t0);
-      maquina.transicionar('sucesso', `race: requisição venceu em ${ms} ms`);
+      maquina.transicionar('sucesso', tr(STRINGS, 'race.success', { ms }));
     } catch (erro) {
       const ms = Math.round(performance.now() - t0);
-      const nome = erro instanceof Error ? erro.name : 'erro';
-      maquina.transicionar(
-        'erro',
-        `race: timeout venceu em ${ms} ms (${nome}) — requisição descartada`,
-      );
+      const nome = erro instanceof Error ? erro.name : tr(STRINGS, 'error.generic');
+      maquina.transicionar('erro', tr(STRINGS, 'race.error', { ms, nome }));
     } finally {
       // abortar cancela o sleep (clearTimeout interno) — sem timer órfão
       controller.abort();
@@ -380,19 +511,19 @@ export function init(container) {
       { class: 'botoes' },
       h('button', {
         type: 'button',
-        text: 'Race: lenta 1500ms × timeout 400ms',
+        text: tr(STRINGS, 'race.btnSlow'),
         on: { click: () => void corridaComTimeout(1500, 400) },
       }),
       h('button', {
         type: 'button',
-        text: 'Race: rápida 200ms × timeout 600ms',
+        text: tr(STRINGS, 'race.btnFast'),
         on: { click: () => void corridaComTimeout(200, 600) },
       }),
       saidaRace,
     ),
     h('p', {
       class: 'nota',
-      text: 'O lado perdedor é abortado no finally: cancela o sleep e evita trabalho fantasma.',
+      text: tr(STRINGS, 'race.note'),
     }),
   );
 
@@ -405,17 +536,19 @@ export function init(container) {
     controllerSimulacao?.abort(); // reiniciar cancela a anterior
     const controller = novoController();
     controllerSimulacao = controller;
-    saidaCancel.textContent = '⏳ em andamento (3000 ms)… clique em "Cancelar"';
+    saidaCancel.textContent = tr(STRINGS, 'cancel.inProgress');
 
     // sleep aceita signal: abort() rejeita a promise imediatamente com AbortError
     void sleep(3000, { signal: controller.signal }).then(
       () => {
-        saidaCancel.textContent = '✔ concluído — o usuário NÃO cancelou a tempo.';
+        saidaCancel.textContent = tr(STRINGS, 'cancel.done');
         controllers.delete(controller);
         controllerSimulacao = null;
       },
       (erro) => {
-        saidaCancel.textContent = `✖ cancelado pelo usuário (${erro?.name ?? 'AbortError'})`;
+        saidaCancel.textContent = tr(STRINGS, 'cancel.cancelled', {
+          erro: erro?.name ?? 'AbortError',
+        });
         controllers.delete(controller);
         controllerSimulacao = null;
       },
@@ -424,7 +557,7 @@ export function init(container) {
 
   function cancelarSimulacao() {
     if (!controllerSimulacao) {
-      saidaCancel.textContent = 'Nada em voo para cancelar.';
+      saidaCancel.textContent = tr(STRINGS, 'cancel.nothing');
       return;
     }
     controllerSimulacao.abort();
@@ -433,21 +566,25 @@ export function init(container) {
   const painelCancel = h(
     'div',
     { class: 'linha' },
-    h('h3', { text: 'AbortController: cancelar requisição em voo' }),
+    h('h3', { text: tr(STRINGS, 'cancel.title') }),
     h(
       'div',
       { class: 'botoes' },
       h('button', {
         type: 'button',
-        text: 'Iniciar simulação (3s)',
+        text: tr(STRINGS, 'btn.start'),
         on: { click: iniciarSimulacao },
       }),
-      h('button', { type: 'button', text: 'Cancelar', on: { click: cancelarSimulacao } }),
+      h('button', {
+        type: 'button',
+        text: tr(STRINGS, 'btn.cancel'),
+        on: { click: cancelarSimulacao },
+      }),
       saidaCancel,
     ),
     h('p', {
       class: 'nota',
-      text: 'O mesmo signal vai para fetch/sleep: um único .abort() encerra a operação inteira.',
+      text: tr(STRINGS, 'cancel.note'),
     }),
   );
 
@@ -467,7 +604,7 @@ export function init(container) {
    */
   async function executarRetry() {
     logRetry.replaceChildren();
-    maquina.transicionar('carregando', 'retry — tentativa 1 de até 4…');
+    maquina.transicionar('carregando', tr(STRINGS, 'retry.starting'));
     let tentativas = 0;
 
     try {
@@ -476,7 +613,7 @@ export function init(container) {
           tentativas += 1;
           if (tentativas <= 2) {
             // falha simulada 2× — na 3ª o fetch de verdade acontece
-            throw new Error(`falha simulada na tentativa ${tentativas}`);
+            throw new Error(tr(STRINGS, 'retry.fakeFailure', { n: tentativas }));
           }
           return buscarJson(URL_QUOTES);
         },
@@ -486,36 +623,37 @@ export function init(container) {
           factor: 2,
           sleep: () => Promise.resolve(), // backoff instantâneo p/ demo snappy
           onRetry: (n, erro) =>
-            registrarRetry(`tentativa ${n} falhou (${erro.message}) → nova tentativa`),
+            registrarRetry(tr(STRINGS, 'retry.attemptFailed', { n, erro: erro.message })),
         },
       );
       const qtd = extrairItens(dados).length;
-      registrarRetry(`sucesso na tentativa ${tentativas}: ${qtd} citações`);
-      maquina.transicionar('sucesso', `retry ok após ${tentativas} tentativas`);
+      registrarRetry(tr(STRINGS, 'retry.success', { n: tentativas, qtd }));
+      maquina.transicionar('sucesso', tr(STRINGS, 'retry.ok', { n: tentativas }));
       renderizarItens(saidaQuotes, extrairItens(dados), (q) => `“${q.text}” — ${q.author}`);
     } catch (erro) {
-      registrarRetry(`esgotado: ${erro instanceof Error ? erro.message : String(erro)}`);
-      maquina.transicionar('erro', 'retry esgotou as tentativas');
+      const mensagem = erro instanceof Error ? erro.message : String(erro);
+      registrarRetry(tr(STRINGS, 'retry.exhausted', { erro: mensagem }));
+      maquina.transicionar('erro', tr(STRINGS, 'retry.exhaustedAll'));
     }
   }
 
   const painelRetry = h(
     'div',
     { class: 'linha' },
-    h('h3', { text: 'attemptWithRetry: falha 2× e sucesso' }),
+    h('h3', { text: tr(STRINGS, 'retry.title') }),
     h(
       'div',
       { class: 'botoes' },
       h('button', {
         type: 'button',
-        text: 'Executar retry',
+        text: tr(STRINGS, 'btn.runRetry'),
         on: { click: () => void executarRetry() },
       }),
     ),
     logRetry,
     h('p', {
       class: 'nota',
-      text: 'Backoff exponencial: 100 ms, 200 ms, 400 ms entre tentativas (aqui instantâneos via sleep injetado).',
+      text: tr(STRINGS, 'retry.note'),
     }),
   );
 

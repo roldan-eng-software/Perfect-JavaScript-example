@@ -15,6 +15,68 @@ import { h, delegate, renderList } from '../core/dom.js';
 import { createStore } from '../core/store.js';
 import { createStorage } from '../core/storage.js';
 import { deepClone } from '../utils/deep-clone.js';
+import { tr } from '../core/i18n.js';
+
+/**
+ * Dicionário de strings da demo — a UI lê o idioma ativo via `tr()` no render.
+ * Comentários e JSDoc permanecem em pt-BR (convenção do projeto).
+ */
+const STRINGS = {
+  'en-US': {
+    'input.placeholder': 'What needs to be done?',
+    'input.aria': 'New task text',
+    'list.aria': 'Tasks',
+    'btn.add': 'Add',
+    'item.copy': '{texto} (copy)',
+    'item.completeAria': 'Complete: {texto}',
+    'item.removeAria': 'Remove: {texto}',
+    counter: '{feitos} of {total} completed',
+    'status.memory': 'storage blocked — using memory (not persisted across reloads)',
+    'status.saved': '✓ saved at {hora}',
+    'status.cleared': 'saved data removed — the current list stays until the next change',
+    'panel.list.title': 'Todo-list with a store (pub/sub + immutability)',
+    'btn.duplicate': 'Duplicate list',
+    'btn.clear': 'Clear saved data',
+    'note.immutable':
+      'Every mutation uses spread/map/filter (a new state, never an edited one), and the store subscriber re-renders the list.',
+    'panel.state.title': 'Current state (JSON via textContent)',
+    'note.frozen':
+      'The store freezes the state (Object.freeze) before notifying: subscribers read it, but cannot change it by accident.',
+    'proxy.lastAccess': 'accessed at {hora}',
+    'proxy.weakmap': 'WeakMap: has={tem} flag={flag} · Object.keys does not expose: {keys}',
+    'panel.proxy.title': 'Proxy: get/set traps + private WeakMap',
+    'btn.proxy': 'Read/write via Proxy',
+    'note.proxy':
+      'Reflect.get/Reflect.set keep the original behavior; the WeakMap holds the flag without leaking it into the object keys.',
+  },
+  'pt-BR': {
+    'input.placeholder': 'O que precisa ser feito?',
+    'input.aria': 'Texto da nova tarefa',
+    'list.aria': 'Tarefas',
+    'btn.add': 'Adicionar',
+    'item.copy': '{texto} (cópia)',
+    'item.completeAria': 'Concluir: {texto}',
+    'item.removeAria': 'Remover: {texto}',
+    counter: '{feitos} de {total} concluídos',
+    'status.memory': 'storage bloqueado — usando memória (não persiste entre reloads)',
+    'status.saved': '✓ salvo às {hora}',
+    'status.cleared': 'dados salvos removidos — a lista atual continua até a próxima alteração',
+    'panel.list.title': 'Todo-list com store (pub/sub + imutabilidade)',
+    'btn.duplicate': 'Duplicar lista',
+    'btn.clear': 'Limpar dados salvos',
+    'note.immutable':
+      'Toda mutação usa spread/map/filter (estado novo, nunca editado) e o assinante do store re-renderiza a lista.',
+    'panel.state.title': 'Estado atual (JSON via textContent)',
+    'note.frozen':
+      'O store congela o estado (Object.freeze) antes de notificar: assinantes leem, mas não alteram por acidente.',
+    'proxy.lastAccess': 'acesso em {hora}',
+    'proxy.weakmap': 'WeakMap: tem={tem} flag={flag} · Object.keys não expõe: {keys}',
+    'panel.proxy.title': 'Proxy: traps de get/set + WeakMap privado',
+    'btn.proxy': 'Ler/escrever via Proxy',
+    'note.proxy':
+      'Reflect.get/Reflect.set mantêm o comportamento original; o WeakMap guarda a flag sem vazar nas chaves do objeto.',
+  },
+};
 
 /**
  * Inicializa a demo de estado, pub/sub e reatividade (todo-list).
@@ -70,7 +132,7 @@ export function init(container) {
       proximoId = validos.reduce((maior, item) => Math.max(maior, item.id + 1), 1);
       return validos;
     } catch (erro) {
-      console.warn('[demo05] falha ao carregar itens salvos:', erro);
+      console.warn('[demo05] failed to load saved items:', erro);
       return [];
     }
   }
@@ -80,12 +142,12 @@ export function init(container) {
   // ── 3. UI: input + botão para adicionar ───────────────────────────────────
   const entradaTexto = h('input', {
     type: 'text',
-    placeholder: 'O que precisa ser feito?',
-    'aria-label': 'Texto da nova tarefa',
+    placeholder: tr(STRINGS, 'input.placeholder'),
+    'aria-label': tr(STRINGS, 'input.aria'),
     autocomplete: 'off',
   });
 
-  const lista = h('ul', { class: 'lista-tarefas', 'aria-label': 'Tarefas' });
+  const lista = h('ul', { class: 'lista-tarefas', 'aria-label': tr(STRINGS, 'list.aria') });
   const contador = h('output', { 'aria-live': 'polite' });
   const previaEstado = h('pre', {
     class: 'previa-estado',
@@ -106,7 +168,7 @@ export function init(container) {
       },
     },
     entradaTexto,
-    h('button', { type: 'submit', text: 'Adicionar' }),
+    h('button', { type: 'submit', text: tr(STRINGS, 'btn.add') }),
   );
 
   /**
@@ -151,7 +213,7 @@ export function init(container) {
       const copias = copia.map((item) => ({
         ...item,
         id: proximoId++,
-        texto: `${item.texto} (cópia)`,
+        texto: tr(STRINGS, 'item.copy', { texto: item.texto }),
       }));
       return { ...estado, itens: [...estado.itens, ...copias] };
     });
@@ -181,21 +243,21 @@ export function init(container) {
         h('input', {
           type: 'checkbox',
           checked: item.feito || undefined,
-          'aria-label': `Concluir: ${item.texto}`,
+          'aria-label': tr(STRINGS, 'item.completeAria', { texto: item.texto }),
         }),
         h('span', { text: item.texto }),
         h('button', {
           type: 'button',
           class: 'remover',
           dataset: { act: 'remover' },
-          'aria-label': `Remover: ${item.texto}`,
+          'aria-label': tr(STRINGS, 'item.removeAria', { texto: item.texto }),
           text: '✕',
         }),
       ),
     );
 
     const { feitos, total } = store.select(selecionarConclusao);
-    contador.textContent = `${feitos} de ${total} concluídos`;
+    contador.textContent = tr(STRINGS, 'counter', { feitos, total });
 
     // textContent: dado dinâmico NUNCA passa por innerHTML
     previaEstado.textContent = JSON.stringify(estado, null, 2);
@@ -203,8 +265,8 @@ export function init(container) {
     // Persistência: salva a cada mudança; feedback "✓ salvo" expira sozinho
     storage.set('itens', estado.itens);
     statusPersistencia.textContent = storage.usandoMemoria()
-      ? 'storage bloqueado — usando memória (não persiste entre reloads)'
-      : `✓ salvo às ${new Date().toLocaleTimeString('pt-BR')}`;
+      ? tr(STRINGS, 'status.memory')
+      : tr(STRINGS, 'status.saved', { hora: new Date().toLocaleTimeString('pt-BR') });
     clearTimeout(timerStatus);
     timerStatus = setTimeout(() => {
       statusPersistencia.textContent = '';
@@ -231,42 +293,45 @@ export function init(container) {
   /** Limpa apenas as chaves do prefixo 'todo:' (a lista atual segue na tela). */
   function limparDadosSalvos() {
     storage.clear();
-    statusPersistencia.textContent =
-      'dados salvos removidos — a lista atual continua até a próxima alteração';
+    statusPersistencia.textContent = tr(STRINGS, 'status.cleared');
   }
 
   const painelLista = h(
     'div',
     { class: 'linha' },
-    h('h3', { text: 'Todo-list com store (pub/sub + imutabilidade)' }),
+    h('h3', { text: tr(STRINGS, 'panel.list.title') }),
     formulario,
     lista,
     h('div', { class: 'botoes' }, contador),
     h(
       'div',
       { class: 'botoes' },
-      h('button', { type: 'button', text: 'Duplicar lista', on: { click: duplicarLista } }),
       h('button', {
         type: 'button',
-        text: 'Limpar dados salvos',
+        text: tr(STRINGS, 'btn.duplicate'),
+        on: { click: duplicarLista },
+      }),
+      h('button', {
+        type: 'button',
+        text: tr(STRINGS, 'btn.clear'),
         on: { click: limparDadosSalvos },
       }),
       statusPersistencia,
     ),
     h('p', {
       class: 'nota',
-      text: 'Toda mutação usa spread/map/filter (estado novo, nunca editado) e o assinante do store re-renderiza a lista.',
+      text: tr(STRINGS, 'note.immutable'),
     }),
   );
 
   const painelEstado = h(
     'div',
     { class: 'linha' },
-    h('h3', { text: 'Estado atual (JSON via textContent)' }),
+    h('h3', { text: tr(STRINGS, 'panel.state.title') }),
     previaEstado,
     h('p', {
       class: 'nota',
-      text: 'O store congela o estado (Object.freeze) antes de notificar: assinantes leem, mas não alteram por acidente.',
+      text: tr(STRINGS, 'note.frozen'),
     }),
   );
 
@@ -309,32 +374,37 @@ export function init(container) {
   function exercitarProxy() {
     // Cada leitura/escrita passa pelos traps e vira uma linha no log
     reativo.contador = reativo.contador + 1;
-    reativo.ultimo = `acesso em ${new Date().toLocaleTimeString('pt-BR')}`;
+    reativo.ultimo = tr(STRINGS, 'proxy.lastAccess', {
+      hora: new Date().toLocaleTimeString('pt-BR'),
+    });
     const temPrivado = dadosPrivados.has(sujeito);
     const privado = dadosPrivados.get(sujeito);
     registrar(
-      `WeakMap: tem=${temPrivado} flag=${String(privado?.flag)} · ` +
-        `Object.keys não expõe: ${JSON.stringify(Object.keys(dadosPrivados.get(sujeito) ?? {}))}`,
+      tr(STRINGS, 'proxy.weakmap', {
+        tem: String(temPrivado),
+        flag: String(privado?.flag),
+        keys: JSON.stringify(Object.keys(dadosPrivados.get(sujeito) ?? {})),
+      }),
     );
   }
 
   const painelProxy = h(
     'div',
     { class: 'linha' },
-    h('h3', { text: 'Proxy: traps de get/set + WeakMap privado' }),
+    h('h3', { text: tr(STRINGS, 'panel.proxy.title') }),
     h(
       'div',
       { class: 'botoes' },
       h('button', {
         type: 'button',
-        text: 'Ler/escrever via Proxy',
+        text: tr(STRINGS, 'btn.proxy'),
         on: { click: exercitarProxy },
       }),
     ),
     saidaProxy,
     h('p', {
       class: 'nota',
-      text: 'Reflect.get/Reflect.set mantêm o comportamento original; o WeakMap guarda a flag sem vazar nas chaves do objeto.',
+      text: tr(STRINGS, 'note.proxy'),
     }),
   );
 

@@ -13,29 +13,106 @@
  *   busca de CEP pendente — sem isso timers/requests vazarão após a saída.
  */
 import { h, on } from '../core/dom.js';
+import { tr } from '../core/i18n.js';
 import { debounce } from '../utils/debounce.js';
 import { sleep } from '../utils/sleep.js';
 import { isCEP, validateField } from '../utils/validators.js';
 
+/** Textos da demo por idioma — lidos via tr() no momento do render. */
+const STRINGS = {
+  'en-US': {
+    'campo.nome': 'Name',
+    'campo.email': 'E-mail',
+    'campo.cpf': 'CPF',
+    'campo.cep': 'CEP',
+    'campo.telefone': 'Phone',
+    'campo.senha': 'Password',
+    'placeholder.email': 'ana@example.com',
+    'placeholder.cpf': '000.000.000-00',
+    'placeholder.cep': '00000-000',
+    'placeholder.telefone': '(00) 00000-0000',
+    'senha.8chars': 'at least 8 characters',
+    'senha.maiuscula': '1 uppercase letter',
+    'senha.minuscula': '1 lowercase letter',
+    'senha.numero': '1 number',
+    'senha.simbolo': '1 symbol',
+    'tabela.campo': 'Field',
+    'checklist.aria': 'Password requirements',
+    'form.aria': 'Registration form (validation demo)',
+    'erro.required': 'This field is required.',
+    'erro.email': 'Enter a valid email (e.g., ana@example.com).',
+    'erro.cpf': 'Invalid CPF — check the 11 digits.',
+    'erro.cep': 'Invalid CEP (format 00000-000).',
+    'erro.phone': 'Invalid BR phone (area code + number).',
+    'erro.password': 'Weak password.',
+    'cep.incompleto': 'Incomplete CEP — keep typing.',
+    'cep.consultando': 'looking up CEP…',
+    'cep.endereco': 'simulated address: Street X, no. {numero} — Mock District ({cep}), 400 ms',
+    'cep.falha': 'CEP lookup failed (try again).',
+    'resumo.titulo': 'Collected data (JSON):',
+    'botao.enviar': 'Submit (reportValidity)',
+    'botao.limpar': 'Clear',
+    ok: '✓ Valid form! Data collected with FormData.',
+    dica: 'Valid test CPF: 529.982.247-25 · CEP: 01310-100 · live validation uses debounce(300ms) and messages go through setCustomValidity.',
+    titulo: 'Form with the Constraint Validation API',
+  },
+  'pt-BR': {
+    'campo.nome': 'Nome',
+    'campo.email': 'E-mail',
+    'campo.cpf': 'CPF',
+    'campo.cep': 'CEP',
+    'campo.telefone': 'Telefone',
+    'campo.senha': 'Senha',
+    'placeholder.email': 'ana@exemplo.com',
+    'placeholder.cpf': '000.000.000-00',
+    'placeholder.cep': '00000-000',
+    'placeholder.telefone': '(00) 00000-0000',
+    'senha.8chars': 'pelo menos 8 caracteres',
+    'senha.maiuscula': '1 letra maiúscula',
+    'senha.minuscula': '1 letra minúscula',
+    'senha.numero': '1 número',
+    'senha.simbolo': '1 símbolo',
+    'tabela.campo': 'Campo',
+    'checklist.aria': 'Requisitos da senha',
+    'form.aria': 'Formulário de cadastro (demo de validação)',
+    'erro.required': 'Este campo é obrigatório.',
+    'erro.email': 'Informe um e-mail válido (ex.: ana@exemplo.com).',
+    'erro.cpf': 'CPF inválido — confira os 11 dígitos.',
+    'erro.cep': 'CEP inválido (formato 00000-000).',
+    'erro.phone': 'Telefone BR inválido (DDD + número).',
+    'erro.password': 'Senha fraca.',
+    'cep.incompleto': 'CEP incompleto — continue digitando.',
+    'cep.consultando': 'consultando CEP…',
+    'cep.endereco': 'endereço simulado: Rua X, nº {numero} — Bairro Mock ({cep}), 400 ms',
+    'cep.falha': 'falha ao consultar o CEP (tente novamente).',
+    'resumo.titulo': 'Dados coletados (JSON):',
+    'botao.enviar': 'Enviar (reportValidity)',
+    'botao.limpar': 'Limpar',
+    ok: '✓ Formulário válido! Dados coletados com FormData.',
+    dica: 'CPF válido de teste: 529.982.247-25 · CEP: 01310-100 · a validação ao vivo usa debounce(300ms) e as mensagens entram via setCustomValidity.',
+    titulo: 'Formulário com Constraint Validation API',
+  },
+};
+
 /**
  * @typedef {object} ConfigCampo
  * @property {string} id nome do campo (name no form)
- * @property {string} rotulo rótulo visível
+ * @property {string} rotulo chave do rótulo visível em STRINGS
  * @property {string} tipo type do input
  * @property {string} regra chave da regra em validateField()
  * @property {boolean} [obrigatorio] se o campo exige conteúdo
  * @property {string} [autocomplete] valor de autocomplete
  * @property {string} [inputmode] teclado numérico/tel no mobile
  * @property {string} [pattern] restrição nativa (alimenta patternMismatch)
- * @property {string} [placeholder] placeholder exemplo
+ * @property {string} [placeholder] chave do placeholder exemplo em STRINGS
  * @property {(valor: string) => string} [mascara] formatação manual no input
  */
 
-/** Definição dos campos do formulário (dados, não UI). */
+/** Definição dos campos do formulário (dados, não UI — textos via STRINGS). */
 const CONFIGS = [
   {
     id: 'nome',
-    rotulo: 'Nome',
+    rotulo: 'campo.nome',
     tipo: 'text',
     regra: 'required',
     obrigatorio: true,
@@ -43,49 +120,49 @@ const CONFIGS = [
   },
   {
     id: 'email',
-    rotulo: 'E-mail',
+    rotulo: 'campo.email',
     tipo: 'email',
     regra: 'email',
     obrigatorio: true,
     autocomplete: 'email',
     pattern: '[^@\\s]+@[^@\\s]+\\.[^@\\s]{2,}',
-    placeholder: 'ana@exemplo.com',
+    placeholder: 'placeholder.email',
   },
   {
     id: 'cpf',
-    rotulo: 'CPF',
+    rotulo: 'campo.cpf',
     tipo: 'text',
     regra: 'cpf',
     inputmode: 'numeric',
     pattern: '\\d{3}\\.\\d{3}\\.\\d{3}-\\d{2}',
-    placeholder: '000.000.000-00',
+    placeholder: 'placeholder.cpf',
     mascara: mascaraCPF,
   },
   {
     id: 'cep',
-    rotulo: 'CEP',
+    rotulo: 'campo.cep',
     tipo: 'text',
     regra: 'cep',
     autocomplete: 'postal-code',
     inputmode: 'numeric',
     pattern: '\\d{5}-\\d{3}',
-    placeholder: '00000-000',
+    placeholder: 'placeholder.cep',
     mascara: mascaraCEP,
   },
   {
     id: 'telefone',
-    rotulo: 'Telefone',
+    rotulo: 'campo.telefone',
     tipo: 'tel',
     regra: 'phone',
     autocomplete: 'tel',
     inputmode: 'tel',
     pattern: '\\(\\d{2}\\) \\d{4,5}-\\d{4}',
-    placeholder: '(00) 00000-0000',
+    placeholder: 'placeholder.telefone',
     mascara: mascaraTelefone,
   },
   {
     id: 'senha',
-    rotulo: 'Senha',
+    rotulo: 'campo.senha',
     tipo: 'password',
     regra: 'password',
     autocomplete: 'new-password',
@@ -97,11 +174,11 @@ const CONFIGS = [
  * (validators.js), item a item, para o checklist ao vivo.
  */
 const REGRAS_SENHA = [
-  { rotulo: 'pelo menos 8 caracteres', teste: (v) => v.length >= 8 },
-  { rotulo: '1 letra maiúscula', teste: (v) => /[A-Z]/.test(v) },
-  { rotulo: '1 letra minúscula', teste: (v) => /[a-z]/.test(v) },
-  { rotulo: '1 número', teste: (v) => /\d/.test(v) },
-  { rotulo: '1 símbolo', teste: (v) => /[^A-Za-z0-9]/.test(v) },
+  { rotulo: 'senha.8chars', teste: (v) => v.length >= 8 },
+  { rotulo: 'senha.maiuscula', teste: (v) => /[A-Z]/.test(v) },
+  { rotulo: 'senha.minuscula', teste: (v) => /[a-z]/.test(v) },
+  { rotulo: 'senha.numero', teste: (v) => /\d/.test(v) },
+  { rotulo: 'senha.simbolo', teste: (v) => /[^A-Za-z0-9]/.test(v) },
 ];
 
 /**
@@ -201,7 +278,7 @@ export function init(container) {
       h(
         'tr',
         {},
-        h('th', { scope: 'col', text: 'Campo' }),
+        h('th', { scope: 'col', text: tr(STRINGS, 'tabela.campo') }),
         h('th', { scope: 'col', text: 'valueMissing' }),
         h('th', { scope: 'col', text: 'patternMismatch' }),
         h('th', { scope: 'col', text: 'valid' }),
@@ -218,11 +295,11 @@ export function init(container) {
   });
 
   const itensChecklist = REGRAS_SENHA.map((regra) =>
-    h('li', { text: `✗ ${regra.rotulo}`, 'data-ok': 'false' }),
+    h('li', { text: `✗ ${tr(STRINGS, regra.rotulo)}`, 'data-ok': 'false' }),
   );
   const checklistSenha = h(
     'ul',
-    { class: 'checklist', id: 'f09-senha-checklist', 'aria-label': 'Requisitos da senha' },
+    { class: 'checklist', id: 'f09-senha-checklist', 'aria-label': tr(STRINGS, 'checklist.aria') },
     ...itensChecklist,
   );
 
@@ -257,7 +334,7 @@ export function init(container) {
     // novalidate: envia SEMPRE ao submit — quem decide a validação é o nosso
     // código (checkValidity/reportValidity), não o balão nativo automático.
     novalidate: true,
-    'aria-label': 'Formulário de cadastro (demo de validação)',
+    'aria-label': tr(STRINGS, 'form.aria'),
   });
 
   for (const config of CONFIGS) {
@@ -274,7 +351,7 @@ export function init(container) {
         autocomplete: config.autocomplete ?? 'off',
         inputmode: config.inputmode,
         pattern: config.pattern,
-        placeholder: config.placeholder,
+        placeholder: config.placeholder ? tr(STRINGS, config.placeholder) : undefined,
         'aria-describedby': descricao,
       })
     );
@@ -282,9 +359,10 @@ export function init(container) {
     // Erro por campo: aria-describedby liga a mensagem ao input e a região é
     // aria-live para o leitor anunciar a correção sem roubar o foco.
     const erro = h('span', { class: 'erro', id: erroId, 'aria-live': 'polite' });
+    const rotuloTexto = tr(STRINGS, config.rotulo);
     const rotulo = h('label', {
       for: sufixo,
-      text: config.obrigatorio ? `${config.rotulo} *` : config.rotulo,
+      text: config.obrigatorio ? `${rotuloTexto} *` : rotuloTexto,
     });
     const bloco = h('div', { class: 'campo' }, rotulo, campo, erro);
 
@@ -297,14 +375,7 @@ export function init(container) {
       ok: h('td', { text: 'true' }),
     };
     corpoTabela.append(
-      h(
-        'tr',
-        {},
-        h('th', { scope: 'row', text: config.rotulo }),
-        celulas.vm,
-        celulas.pm,
-        celulas.ok,
-      ),
+      h('tr', {}, h('th', { scope: 'row', text: rotuloTexto }), celulas.vm, celulas.pm, celulas.ok),
     );
 
     /** @type {EntradaCampo} */
@@ -351,24 +422,23 @@ export function init(container) {
   function validarCampo(entrada) {
     const { config, campo } = entrada;
     const valor = campo.value;
-    const resultado =
-      valor.trim() === ''
-        ? config.obrigatorio
-          ? validateField('required', valor)
-          : { valido: true, mensagem: '' }
-        : validateField(config.regra, valor);
+    // Usamos SOMENTE o booleano `valido` dos validators — as mensagens exibidas
+    // vêm do dicionário STRINGS (o validators.js é testado e fixo em PT-BR).
+    const regraAplicada =
+      valor.trim() === '' ? (config.obrigatorio ? 'required' : '') : config.regra;
+    const valido = regraAplicada === '' || validateField(regraAplicada, valor).valido;
+    // Mensagem (balão nativo + span de erro): só quando o campo FALHA.
+    const mensagem = valido ? '' : tr(STRINGS, `erro.${regraAplicada}`);
 
-    // Só uma string NÃO vazia invalida o campo: como isStrongPassword devolve
-    // "Senha forte." até quando passa, guardamos mensagem só quando FALHA.
-    campo.setCustomValidity(resultado.valido ? '' : resultado.mensagem);
-    if (resultado.valido) {
+    campo.setCustomValidity(mensagem);
+    if (valido) {
       campo.removeAttribute('aria-invalid');
     } else {
       campo.setAttribute('aria-invalid', 'true');
     }
-    entrada.erro.textContent = resultado.valido ? '' : resultado.mensagem;
+    entrada.erro.textContent = mensagem;
     atualizarLinhaTabela(entrada);
-    return resultado.valido;
+    return valido;
   }
 
   /**
@@ -394,7 +464,7 @@ export function init(container) {
     REGRAS_SENHA.forEach((regra, indice) => {
       const ok = regra.teste(valor);
       const item = itensChecklist[indice];
-      item.textContent = `${ok ? '✓' : '✗'} ${regra.rotulo}`;
+      item.textContent = `${ok ? '✓' : '✗'} ${tr(STRINGS, regra.rotulo)}`;
       item.setAttribute('data-ok', String(ok));
     });
   }
@@ -414,31 +484,36 @@ export function init(container) {
     }
     // Só consulta quando o formato é válido (isCEP) — consulta parcial é ruído
     if (!isCEP(valor)) {
-      statusCep.textContent = 'CEP incompleto — continue digitando.';
+      statusCep.textContent = tr(STRINGS, 'cep.incompleto');
       return;
     }
     controladorCep = new AbortController();
     const { signal } = controladorCep;
-    statusCep.textContent = 'consultando CEP…';
+    statusCep.textContent = tr(STRINGS, 'cep.consultando');
     sleep(400, { signal })
       .then(() => {
         if (signal.aborted) return;
         const digitos = valor.replace(/\D/g, '');
-        statusCep.textContent =
-          `endereço simulado: Rua X, nº ${Number(digitos.slice(-4)) || 0} — ` +
-          `Bairro Mock (${digitos.slice(0, 5)}-${digitos.slice(5)}), 400 ms`;
+        statusCep.textContent = tr(STRINGS, 'cep.endereco', {
+          numero: Number(digitos.slice(-4)) || 0,
+          cep: `${digitos.slice(0, 5)}-${digitos.slice(5)}`,
+        });
       })
       .catch((erro) => {
         // AbortError é esperado quando o usuário digita de novo — não é falha
         if (erro instanceof Error && erro.name === 'AbortError') return;
-        statusCep.textContent = 'falha ao consultar o CEP (tente novamente).';
+        statusCep.textContent = tr(STRINGS, 'cep.falha');
       });
   }
 
   // ── submit / reset ─────────────────────────────────────────────────────────
-  const resumoTitulo = h('p', { class: 'nota', text: 'Dados coletados (JSON):' });
-  const botaoEnviar = h('button', { type: 'submit', text: 'Enviar (reportValidity)' });
-  const botaoLimpar = h('button', { type: 'button', text: 'Limpar', on: { click: limparTudo } });
+  const resumoTitulo = h('p', { class: 'nota', text: tr(STRINGS, 'resumo.titulo') });
+  const botaoEnviar = h('button', { type: 'submit', text: tr(STRINGS, 'botao.enviar') });
+  const botaoLimpar = h('button', {
+    type: 'button',
+    text: tr(STRINGS, 'botao.limpar'),
+    on: { click: limparTudo },
+  });
   // Botões DENTRO do <form>: um botão submit fora dele não dispara submit
   form.append(h('div', { class: 'botoes' }, botaoEnviar, botaoLimpar));
 
@@ -456,7 +531,7 @@ export function init(container) {
         // ficar lendo campo por campo no DOM.
         const dados = Object.fromEntries(new FormData(form));
         resumoJson.textContent = JSON.stringify(dados, null, 2);
-        linhaSucesso.textContent = '✓ Formulário válido! Dados coletados com FormData.';
+        linhaSucesso.textContent = tr(STRINGS, 'ok');
         return;
       }
 
@@ -489,15 +564,13 @@ export function init(container) {
   // ── montagem ───────────────────────────────────────────────────────────────
   const dica = h('p', {
     class: 'nota',
-    text:
-      'CPF válido de teste: 529.982.247-25 · CEP: 01310-100 · ' +
-      'a validação ao vivo usa debounce(300ms) e as mensagens entram via setCustomValidity.',
+    text: tr(STRINGS, 'dica'),
   });
 
   const painel = h(
     'div',
     { class: 'linha' },
-    h('h3', { text: 'Formulário com Constraint Validation API' }),
+    h('h3', { text: tr(STRINGS, 'titulo') }),
     h('div', { class: 'grade' }, form, h('div', {}, h('h4', { text: 'ValidityState' }), tabela)),
     linhaSucesso,
     resumoTitulo,

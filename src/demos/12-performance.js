@@ -10,6 +10,57 @@
  *   pendente e limpa as entradas de performance criadas pela demo.
  */
 import { h } from '../core/dom.js';
+import { tr } from '../core/i18n.js';
+
+/** Textos de interface (chrome) da demo: botões, rótulos e mensagens de status. */
+const STRINGS = {
+  'en-US': {
+    'btn.measure': 'Measure synchronous work',
+    'out.measure':
+      'measure "{measure}": {duracao} ms · performance.now() on click: {agora} ms · checksum: {soma}',
+    'note.measure':
+      'Entries land in performance.getEntriesByType("measure") — inspect them in the DevTools Performance panel.',
+    'paint.entry': '{name}: {tempo} ms after navigation start',
+    'paint.unavailable':
+      'PerformanceObserver "paint" type unavailable in this browser — FP/FCP omitted.',
+    'note.observer':
+      'The same observer also receives "layout-shift" (CLS) and "largest-contentful-paint" when supported.',
+    'btn.idle': 'Schedule on idle',
+    'btn.idleBlock': 'Block UI 300ms and schedule',
+    'idle.out': 'ran on idle · free time left in the frame: {restante} ms{origem}',
+    'idle.fallback': ' · setTimeout fallback (no requestIdleCallback)',
+    'note.idle':
+      'Idle ≠ infinite: timeRemaining() shows the free ms of the frame; timeout prevents starvation.',
+    'nav.title': 'Navigation Timing (this page)',
+    'nav.line': '{rotulo}: {tempo}',
+    'nav.pending': '— (not yet occurred)',
+    'nav.redirect': 'redirect (if any)',
+    'nav.unavailable': 'Navigation Timing unavailable (or navigation still in progress).',
+  },
+  'pt-BR': {
+    'btn.measure': 'Medir trabalho síncrono',
+    'out.measure':
+      'measure "{measure}": {duracao} ms · performance.now() no clique: {agora} ms · checksum: {soma}',
+    'note.measure':
+      'As entradas ficam em performance.getEntriesByType("measure") — inspecione no painel de Performance do DevTools.',
+    'paint.entry': '{name}: {tempo} ms após o início da navegação',
+    'paint.unavailable':
+      'PerformanceObserver tipo "paint" indisponível neste navegador — FP/FCP omitidos.',
+    'note.observer':
+      'O mesmo observer também recebe "layout-shift" (CLS) e "largest-contentful-paint" quando suportados.',
+    'btn.idle': 'Agendar no idle',
+    'btn.idleBlock': 'Travar UI 300ms e agendar',
+    'idle.out': 'rodou no idle · tempo livre restante no quadro: {restante} ms{origem}',
+    'idle.fallback': ' · fallback setTimeout (sem requestIdleCallback)',
+    'note.idle':
+      'Idle ≠ infinito: timeRemaining() mostra os ms livres do quadro; timeout evita starvation.',
+    'nav.title': 'Navigation Timing (esta página)',
+    'nav.line': '{rotulo}: {tempo}',
+    'nav.pending': '— (ainda não ocorreu)',
+    'nav.redirect': 'redirect (se houve)',
+    'nav.unavailable': 'Navigation Timing indisponível (ou navegação ainda em curso).',
+  },
+};
 
 /** Nomes de mark/measure usados pela demo (evita poluir o PerformanceTimeline). */
 const MARK_INICIO = 'demo12:inicio';
@@ -52,9 +103,12 @@ export function init(container) {
     performance.mark(MARK_FIM);
 
     const entrada = performance.measure(MEASURE, MARK_INICIO, MARK_FIM);
-    saidaMedicao.textContent =
-      `measure "${MEASURE}": ${entrada.duration.toFixed(3)} ms · ` +
-      `performance.now() no clique: ${performance.now().toFixed(1)} ms · checksum: ${soma}`;
+    saidaMedicao.textContent = tr(STRINGS, 'out.measure', {
+      measure: MEASURE,
+      duracao: entrada.duration.toFixed(3),
+      agora: performance.now().toFixed(1),
+      soma,
+    });
   }
 
   const painelMedicao = h(
@@ -66,14 +120,14 @@ export function init(container) {
       { class: 'botoes' },
       h('button', {
         type: 'button',
-        text: 'Medir trabalho síncrono',
+        text: tr(STRINGS, 'btn.measure'),
         on: { click: medirTrabalho },
       }),
       saidaMedicao,
     ),
     h('p', {
       class: 'nota',
-      text: 'As entradas ficam em performance.getEntriesByType("measure") — inspecione no painel de Performance do DevTools.',
+      text: tr(STRINGS, 'note.measure'),
     }),
   );
 
@@ -97,7 +151,10 @@ export function init(container) {
         // textContent puro — nome da métrica e tempo nunca viram HTML
         listaPaint.append(
           h('p', {
-            text: `${entrada.name}: ${entrada.startTime.toFixed(1)} ms após o início da navegação`,
+            text: tr(STRINGS, 'paint.entry', {
+              name: entrada.name,
+              tempo: entrada.startTime.toFixed(1),
+            }),
           }),
         );
       }
@@ -108,7 +165,7 @@ export function init(container) {
     listaPaint.append(
       h('p', {
         class: 'nota',
-        text: 'PerformanceObserver tipo "paint" indisponível neste navegador — FP/FCP omitidos.',
+        text: tr(STRINGS, 'paint.unavailable'),
       }),
     );
   }
@@ -120,7 +177,7 @@ export function init(container) {
     listaPaint,
     h('p', {
       class: 'nota',
-      text: 'O mesmo observer também recebe "layout-shift" (CLS) e "largest-contentful-paint" quando suportados.',
+      text: tr(STRINGS, 'note.observer'),
     }),
   );
 
@@ -158,8 +215,8 @@ export function init(container) {
       idleId = null;
       if (!ativo) return;
       const restante = prazo ? Math.max(0, prazo.timeRemaining()).toFixed(2) : '—';
-      const origem = idleEmFallback ? ' · fallback setTimeout (sem requestIdleCallback)' : '';
-      saidaIdle.textContent = `rodou no idle · tempo livre restante no quadro: ${restante} ms${origem}`;
+      const origem = idleEmFallback ? tr(STRINGS, 'idle.fallback') : '';
+      saidaIdle.textContent = tr(STRINGS, 'idle.out', { restante, origem });
     };
 
     const temRic = typeof window.requestIdleCallback === 'function';
@@ -188,34 +245,35 @@ export function init(container) {
       { class: 'botoes' },
       h('button', {
         type: 'button',
-        text: 'Agendar no idle',
+        text: tr(STRINGS, 'btn.idle'),
         on: { click: () => agendarIdle(0) },
       }),
       h('button', {
         type: 'button',
-        text: 'Travar UI 300ms e agendar',
+        text: tr(STRINGS, 'btn.idleBlock'),
         on: { click: () => agendarIdle(300) },
       }),
       saidaIdle,
     ),
     h('p', {
       class: 'nota',
-      text: 'Idle ≠ infinito: timeRemaining() mostra os ms livres do quadro; timeout evita starvation.',
+      text: tr(STRINGS, 'note.idle'),
     }),
   );
 
   // ── 4. Navigation Timing: tempos reais desta navegação ──────────────────────
-  const painelNavegacao = h(
-    'div',
-    { class: 'linha' },
-    h('h3', { text: 'Navigation Timing (esta página)' }),
-  );
+  const painelNavegacao = h('div', { class: 'linha' }, h('h3', { text: tr(STRINGS, 'nav.title') }));
   const nav = /** @type {PerformanceNavigationTiming|null} */ (
     performance.getEntriesByType('navigation')[0] ?? null
   );
   if (nav && typeof nav.responseStart === 'number' && nav.responseStart > 0) {
     const linha = (rotulo, ms) =>
-      h('p', { text: `${rotulo}: ${ms > 0 ? `${ms.toFixed(1)} ms` : '— (ainda não ocorreu)'}` });
+      h('p', {
+        text: tr(STRINGS, 'nav.line', {
+          rotulo,
+          tempo: ms > 0 ? `${ms.toFixed(1)} ms` : tr(STRINGS, 'nav.pending'),
+        }),
+      });
     painelNavegacao.append(
       h(
         'div',
@@ -223,14 +281,14 @@ export function init(container) {
         linha('TTFB (responseStart)', nav.responseStart),
         linha('DOMContentLoaded', nav.domContentLoadedEventEnd),
         linha('load', nav.loadEventEnd),
-        linha('redirect (se houve)', nav.redirectEnd - nav.redirectStart),
+        linha(tr(STRINGS, 'nav.redirect'), nav.redirectEnd - nav.redirectStart),
       ),
     );
   } else {
     painelNavegacao.append(
       h('p', {
         class: 'nota',
-        text: 'Navigation Timing indisponível (ou navegação ainda em curso).',
+        text: tr(STRINGS, 'nav.unavailable'),
       }),
     );
   }

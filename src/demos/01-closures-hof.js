@@ -9,8 +9,43 @@
  * COMPLEXIDADE/OBSERVAÇÕES: retorna cleanup que cancela timers e remove listeners.
  */
 import { h, on } from '../core/dom.js';
+import { tr } from '../core/i18n.js';
 import { compose, pipe, curry } from '../utils/compose.js';
 import { memoize } from '../utils/memoize.js';
+
+/** Dicionário de strings da demo — tr() lê o idioma ativo em tempo de render. */
+const STRINGS = {
+  'en-US': {
+    'counter.title': 'Closure: encapsulated counter',
+    'counter.note':
+      'Each call to criarContador() creates a new scope: `valor` is not global and does not leak.',
+    'input.aria': 'Input value for compose and pipe',
+    'input.label': 'input: ',
+    'curry.note': 'curry: somaComCurry(1)(2)(3) = {resultado} — same output, partial args.',
+    'memoize.title': 'memoize: with vs without cache',
+    'memoize.measure': 'Measure performance.now()',
+    'memoize.resultLabel': 'result: ',
+    'memoize.times':
+      '1st call (no cache): {semCache} ms · memoize 1st: {primeira} ms · memoize 2nd (cached): {segunda} ms → {vezes}× faster',
+    'memoize.note':
+      'memoize stores the result in a Map keyed by arguments — the 2nd access does not re-run the body.',
+  },
+  'pt-BR': {
+    'counter.title': 'Closure: contador encapsulado',
+    'counter.note':
+      'Cada chamada a criarContador() cria um escopo novo: `valor` não é global e não vaza.',
+    'input.aria': 'Valor de entrada para compose e pipe',
+    'input.label': 'entrada: ',
+    'curry.note': 'curry: somaComCurry(1)(2)(3) = {resultado} — mesma saída, args parciais.',
+    'memoize.title': 'memoize: com vs sem cache',
+    'memoize.measure': 'Medir performance.now()',
+    'memoize.resultLabel': 'resultado: ',
+    'memoize.times':
+      '1ª chamada (sem cache): {semCache} ms · memoize 1ª: {primeira} ms · memoize 2ª (cache): {segunda} ms → {vezes}× mais rápido',
+    'memoize.note':
+      'memoize guarda o resultado num Map por argumentos — o 2º acesso não re-executa o corpo.',
+  },
+};
 
 /**
  * Inicializa a demo de closures e funções de ordem superior.
@@ -39,7 +74,7 @@ export function init(container) {
   const painelContador = h(
     'div',
     { class: 'linha' },
-    h('h3', { text: 'Closure: contador encapsulado' }),
+    h('h3', { text: tr(STRINGS, 'counter.title') }),
     h(
       'div',
       { class: 'botoes' },
@@ -49,7 +84,7 @@ export function init(container) {
     ),
     h('p', {
       class: 'nota',
-      text: 'Cada chamada a criarContador() cria um escopo novo: `valor` não é global e não vaza.',
+      text: tr(STRINGS, 'counter.note'),
     }),
   );
 
@@ -68,7 +103,7 @@ export function init(container) {
     type: 'number',
     value: '5',
     inputmode: 'numeric',
-    'aria-label': 'Valor de entrada para compose e pipe',
+    'aria-label': tr(STRINGS, 'input.aria'),
   });
   const saidaCompose = h('output', { 'aria-live': 'polite' });
   const saidaPipe = h('output', { 'aria-live': 'polite' });
@@ -93,12 +128,12 @@ export function init(container) {
     h(
       'div',
       { class: 'grade' },
-      h('label', {}, 'entrada: ', entrada),
+      h('label', {}, tr(STRINGS, 'input.label'), entrada),
       h('p', {}, h('code', { text: 'compose(−3, ×2, +1)(n)' }), ' = ', saidaCompose),
       h('p', {}, h('code', { text: 'pipe(+1, ×2, −3)(n)' }), ' = ', saidaPipe),
       h('p', {
         class: 'nota',
-        text: `curry: somaComCurry(1)(2)(3) = ${somaComCurry(1)(2)(3)} — mesma saída, args parciais.`,
+        text: tr(STRINGS, 'curry.note', { resultado: somaComCurry(1)(2)(3) }),
       }),
     ),
   );
@@ -135,32 +170,33 @@ export function init(container) {
     const t5 = performance.now();
 
     resultadoMemo.textContent = String(cached);
-    temposMemo.textContent =
-      `1ª chamada (sem cache): ${(t1 - t0).toFixed(3)} ms · ` +
-      `memoize 1ª: ${(t3 - t2).toFixed(3)} ms · ` +
-      `memoize 2ª (cache): ${(t5 - t4).toFixed(4)} ms → ` +
-      `${((t1 - t0) / Math.max(t5 - t4, 0.0001)).toFixed(0)}× mais rápido`;
+    temposMemo.textContent = tr(STRINGS, 'memoize.times', {
+      semCache: (t1 - t0).toFixed(3),
+      primeira: (t3 - t2).toFixed(3),
+      segunda: (t5 - t4).toFixed(4),
+      vezes: ((t1 - t0) / Math.max(t5 - t4, 0.0001)).toFixed(0),
+    });
   }
 
   const painelMemo = h(
     'div',
     { class: 'linha' },
-    h('h3', { text: 'memoize: com vs sem cache' }),
+    h('h3', { text: tr(STRINGS, 'memoize.title') }),
     h(
       'div',
       { class: 'botoes' },
       h('button', {
         type: 'button',
-        text: 'Medir performance.now()',
+        text: tr(STRINGS, 'memoize.measure'),
         on: { click: medirMemoize },
       }),
-      h('span', { class: 'nota', text: 'resultado: ' }),
+      h('span', { class: 'nota', text: tr(STRINGS, 'memoize.resultLabel') }),
       resultadoMemo,
     ),
     temposMemo,
     h('p', {
       class: 'nota',
-      text: 'memoize guarda o resultado num Map por argumentos — o 2º acesso não re-executa o corpo.',
+      text: tr(STRINGS, 'memoize.note'),
     }),
   );
 

@@ -12,6 +12,110 @@
  *   linha (textContent) num output com aria-live; cleanup remove listeners.
  */
 import { h, on } from '../core/dom.js';
+import { tr } from '../core/i18n.js';
+
+/**
+ * Dicionário de strings da demo — a UI lê o idioma ativo via `tr()`.
+ * Comentários e JSDoc permanecem em pt-BR (convenção do projeto).
+ */
+const STRINGS = {
+  'en-US': {
+    'output.error': 'error: {msg}',
+    'registry.template': 'model',
+    'registry.holder': 'system',
+    'registry.account': 'account',
+    'account.holderRequired': 'account holder is required',
+    'account.openingNegative': 'opening balance cannot be negative',
+    'account.corrupted': 'corrupted balance: negative',
+    'account.finite': 'balance must be a finite number >= 0',
+    'account.depositPositive': 'deposit must be positive',
+    'account.insufficient': 'insufficient balance',
+    'account.summary': '{titular}: ${saldo}',
+    'account.records': '{n} records in the static registry',
+    'account.savingsSummary': 'Savings — {resumo}',
+    'btn.runAccount': 'Run bank account',
+    'btn.runInheritance': 'Run inheritance',
+    'account.deposit50': 'deposit $50 → {resumo}',
+    'account.withdraw30': 'withdraw $30 → balance {saldo}',
+    'account.balanceAccepted': 'balance accepted?!',
+    'panel.classes.title': 'a) Private fields # + validation + static block',
+    'note.privateFields':
+      '#saldo/#titular are inaccessible outside the class; the static block populates the registry at definition time (shown by the static method).',
+    'label.mixin': 'mixin (extended class):',
+    'label.factory': 'factory (plain object):',
+    'btn.compareMixin': 'Compare mixin vs factory',
+    'mixin.logDeposit': 'deposit made',
+    'mixin.logSecond': 'second entry',
+    'mixin.history': 'history: {n} entries',
+    'factory.summary': 'Factory — {titular}: ${saldo}',
+    'factory.noPrototype': 'no class prototype: {valor}',
+    'note.mixin':
+      'Same reuse capability: the mixin inherits via prototype (instanceof works); the factory closes over state in a closure (no instanceof).',
+    'btn.showSymbol': 'Show hidden Symbol',
+    'symbol.title': 'd) Symbol as a hidden key',
+    'symbol.name': 'panel',
+    'symbol.secret': 'secret',
+    'symbol.symbols': 'symbols: {symbols}',
+    'symbol.internalCall': 'internal call: {resultado}',
+    'note.symbol': 'Object.getOwnPropertySymbols reveals what Object.keys and JSON hide.',
+    'counter.notInitialized': 'counter not initialized',
+    'btn.runCounter': 'Run WeakMap counter',
+    'weak.value': 'value: {valor}',
+    'weak.keys': 'Object.keys: [{keys}] (nothing leaks)',
+    'weak.hasState': 'WeakMap holds the state: {tem}',
+    'panel.weak.title': 'e) WeakMap: "old-school" privacy',
+    'note.weak':
+      'Compared with # in section (a): same result — but here the state lives OUTSIDE the object and does not show up in Object.keys.',
+  },
+  'pt-BR': {
+    'output.error': 'erro: {msg}',
+    'registry.template': 'modelo',
+    'registry.holder': 'sistema',
+    'registry.account': 'conta',
+    'account.holderRequired': 'titular é obrigatório',
+    'account.openingNegative': 'saldo inicial não pode ser negativo',
+    'account.corrupted': 'saldo corrompido: negativo',
+    'account.finite': 'saldo deve ser um número finito >= 0',
+    'account.depositPositive': 'deposito deve ser positivo',
+    'account.insufficient': 'saldo insuficiente',
+    'account.summary': '{titular}: R$ {saldo}',
+    'account.records': '{n} registros no registry estático',
+    'account.savingsSummary': 'Poupança de {resumo}',
+    'btn.runAccount': 'Executar conta bancária',
+    'btn.runInheritance': 'Executar herança',
+    'account.deposit50': 'deposito R$50 → {resumo}',
+    'account.withdraw30': 'sacar R$30 → saldo {saldo}',
+    'account.balanceAccepted': 'saldo aceito?!',
+    'panel.classes.title': 'a) Private fields # + validação + static block',
+    'note.privateFields':
+      '#saldo/#titular são inacessíveis fora da classe; o static block popula o registry na definição (mostrado pelo método estático).',
+    'label.mixin': 'mixin (classe estendida):',
+    'label.factory': 'factory (objeto puro):',
+    'btn.compareMixin': 'Comparar mixin vs fábrica',
+    'mixin.logDeposit': 'deposito feito',
+    'mixin.logSecond': 'segunda entrada',
+    'mixin.history': 'histórico: {n} linhas',
+    'factory.summary': 'Fábrica — {titular}: R$ {saldo}',
+    'factory.noPrototype': 'sem prototype de classe: {valor}',
+    'note.mixin':
+      'Mesma capacidade de reuso: mixin herda via prototype (instanceof funciona); factory fecha o estado em closure (sem instanceof).',
+    'btn.showSymbol': 'Mostrar Symbol oculto',
+    'symbol.title': 'd) Symbol como chave oculta',
+    'symbol.name': 'painel',
+    'symbol.secret': 'segredo',
+    'symbol.symbols': 'símbolos: {symbols}',
+    'symbol.internalCall': 'chamada interna: {resultado}',
+    'note.symbol': 'Object.getOwnPropertySymbols revela o que Object.keys e JSON escondem.',
+    'counter.notInitialized': 'contador não inicializado',
+    'btn.runCounter': 'Executar contador WeakMap',
+    'weak.value': 'valor: {valor}',
+    'weak.keys': 'Object.keys: [{keys}] (nada vaza)',
+    'weak.hasState': 'WeakMap tem o estado: {tem}',
+    'panel.weak.title': 'e) WeakMap: privacidade "à moda antiga"',
+    'note.weak':
+      'Comparado com # na seção (a): mesmo resultado — mas aqui o estado vive FORA do objeto e não aparece em Object.keys.',
+  },
+};
 
 /**
  * Inicializa a demo de classes e OO moderno.
@@ -47,7 +151,8 @@ export function init(container) {
       const valor = fn();
       return typeof valor === 'string' ? valor : JSON.stringify(valor);
     } catch (erro) {
-      return `erro: ${erro instanceof Error ? erro.message : String(erro)}`;
+      const msg = erro instanceof Error ? erro.message : String(erro);
+      return tr(STRINGS, 'output.error', { msg });
     }
   }
 
@@ -61,7 +166,10 @@ export function init(container) {
 
     static {
       // static block (ES2022): roda na DEFINIÇÃO da classe — boot/config limpos
-      ContaBancaria.registros.push({ tipo: 'modelo', titular: 'sistema' });
+      ContaBancaria.registros.push({
+        tipo: tr(STRINGS, 'registry.template'),
+        titular: tr(STRINGS, 'registry.holder'),
+      });
     }
 
     #saldo;
@@ -73,24 +181,26 @@ export function init(container) {
      */
     constructor(titular, saldoInicial = 0) {
       if (typeof titular !== 'string' || titular.trim() === '') {
-        throw new TypeError('titular é obrigatório');
+        throw new TypeError(tr(STRINGS, 'account.holderRequired'));
       }
-      if (saldoInicial < 0) throw new RangeError('saldo inicial não pode ser negativo');
+      if (saldoInicial < 0) {
+        throw new RangeError(tr(STRINGS, 'account.openingNegative'));
+      }
       this.#titular = titular;
       this.#saldo = saldoInicial;
-      ContaBancaria.registros.push({ tipo: 'conta', titular });
+      ContaBancaria.registros.push({ tipo: tr(STRINGS, 'registry.account'), titular });
     }
 
     /** Getter valida invariantes: saldo negativo é corrompido, nunca válido. */
     get saldo() {
-      if (this.#saldo < 0) throw new RangeError('saldo corrompido: negativo');
+      if (this.#saldo < 0) throw new RangeError(tr(STRINGS, 'account.corrupted'));
       return this.#saldo;
     }
 
     /** Setter rejeita escrita inválida — encapsulamento com validação. */
     set saldo(novo) {
       if (typeof novo !== 'number' || !Number.isFinite(novo) || novo < 0) {
-        throw new RangeError('saldo deve ser um número finito >= 0');
+        throw new RangeError(tr(STRINGS, 'account.finite'));
       }
       this.#saldo = novo;
     }
@@ -100,7 +210,7 @@ export function init(container) {
      * @returns {number} novo saldo
      */
     depositar(valor) {
-      if (valor <= 0) throw new RangeError('deposito deve ser positivo');
+      if (valor <= 0) throw new RangeError(tr(STRINGS, 'account.depositPositive'));
       this.#saldo += valor;
       return this.saldo;
     }
@@ -110,19 +220,22 @@ export function init(container) {
      * @returns {number} novo saldo
      */
     sacar(valor) {
-      if (valor > this.#saldo) throw new Error('saldo insuficiente');
+      if (valor > this.#saldo) throw new Error(tr(STRINGS, 'account.insufficient'));
       this.#saldo -= valor;
       return this.saldo;
     }
 
     /** @returns {string} resumo legível (sobrescrito na subclasse) */
     resumir() {
-      return `${this.#titular}: R$ ${this.saldo.toFixed(2)}`;
+      return tr(STRINGS, 'account.summary', {
+        titular: this.#titular,
+        saldo: this.saldo.toFixed(2),
+      });
     }
 
     /** Método estático: pertence à CLASSE, não à instância. */
     static descreverRegistro() {
-      return `${ContaBancaria.registros.length} registros no registry estático`;
+      return tr(STRINGS, 'account.records', { n: ContaBancaria.registros.length });
     }
   }
 
@@ -146,14 +259,14 @@ export function init(container) {
 
     /** Override: mesma assinatura, comportamento específico da poupança. */
     resumir() {
-      return `Poupança de ${super.resumir()}`;
+      return tr(STRINGS, 'account.savingsSummary', { resumo: super.resumir() });
     }
   }
 
   const saidaContas = h('output', { class: 'saida', 'aria-live': 'polite' });
   const btnContas = h('button', {
     type: 'button',
-    text: 'Executar conta bancária',
+    text: tr(STRINGS, 'btn.runAccount'),
     on: {
       click: () => {
         anexar(
@@ -162,11 +275,11 @@ export function init(container) {
             const conta = new ContaBancaria('Ana', 100);
             conta.depositar(50);
             const linhas = [
-              `deposito R$50 → ${conta.resumir()}`,
-              `sacar R$30 → saldo ${conta.sacar(30).toFixed(2)}`,
+              tr(STRINGS, 'account.deposit50', { resumo: conta.resumir() }),
+              tr(STRINGS, 'account.withdraw30', { saldo: conta.sacar(30).toFixed(2) }),
               executar(() => {
                 conta.saldo = -1;
-                return 'saldo aceito?!';
+                return tr(STRINGS, 'account.balanceAccepted');
               }),
               executar(() => new ContaBancaria('', 0)),
               `static: ${ContaBancaria.descreverRegistro()}`,
@@ -180,7 +293,7 @@ export function init(container) {
 
   const btnHeranca = h('button', {
     type: 'button',
-    text: 'Executar herança',
+    text: tr(STRINGS, 'btn.runInheritance'),
     on: {
       click: () => {
         anexar(
@@ -205,12 +318,12 @@ export function init(container) {
   const painelClasses = h(
     'div',
     { class: 'linha' },
-    h('h3', { text: 'a) Private fields # + validação + static block' }),
+    h('h3', { text: tr(STRINGS, 'panel.classes.title') }),
     h('div', { class: 'botoes' }, btnContas, btnHeranca),
     saidaContas,
     h('p', {
       class: 'nota',
-      text: '#saldo/#titular são inacessíveis fora da classe; o static block popula o registry na definição (mostrado pelo método estático).',
+      text: tr(STRINGS, 'note.privateFields'),
     }),
   );
 
@@ -261,7 +374,10 @@ export function init(container) {
         return saldo;
       },
       resumir() {
-        return `Fábrica — ${titular}: R$ ${saldo.toFixed(2)}`;
+        return tr(STRINGS, 'factory.summary', {
+          titular,
+          saldo: saldo.toFixed(2),
+        });
       },
     };
   }
@@ -270,13 +386,13 @@ export function init(container) {
   const saidaMixin = h('output', { class: 'saida', 'aria-live': 'polite' });
   const saidaFactory = h('output', { class: 'saida', 'aria-live': 'polite' });
   saidaMix.append(
-    h('p', { class: 'nota', text: 'mixin (classe estendida):' }),
+    h('p', { class: 'nota', text: tr(STRINGS, 'label.mixin') }),
     saidaMixin,
-    h('p', { class: 'nota', text: 'factory (objeto puro):' }),
+    h('p', { class: 'nota', text: tr(STRINGS, 'label.factory') }),
     saidaFactory,
   );
 
-  const btnMistura = h('button', { type: 'button', text: 'Comparar mixin vs fábrica' });
+  const btnMistura = h('button', { type: 'button', text: tr(STRINGS, 'btn.compareMixin') });
   // Listener explícito via on(): fica registrado em `remocoes` e é removido no cleanup
   remocoes.push(
     on(btnMistura, 'click', () => {
@@ -286,11 +402,11 @@ export function init(container) {
         saidaMixin,
         executar(() => {
           logavel.depositar(20);
-          logavel.log('deposito feito');
+          logavel.log(tr(STRINGS, 'mixin.logDeposit'));
           return [
             logavel.resumir(),
-            `log: ${logavel.log('segunda entrada')}`,
-            `histórico: ${logavel.historico.length} linhas`,
+            `log: ${logavel.log(tr(STRINGS, 'mixin.logSecond'))}`,
+            tr(STRINGS, 'mixin.history', { n: logavel.historico.length }),
             `instanceof ContaBancaria: ${logavel instanceof ContaBancaria}`,
           ].join(' · ');
         }),
@@ -302,7 +418,9 @@ export function init(container) {
           conta.depositar(20);
           return [
             conta.resumir(),
-            `sem prototype de classe: ${Object.getPrototypeOf(conta) === Object.prototype}`,
+            tr(STRINGS, 'factory.noPrototype', {
+              valor: String(Object.getPrototypeOf(conta) === Object.prototype),
+            }),
             `Object.keys: ${Object.keys(conta).join(', ')}`,
           ].join(' · ');
         }),
@@ -318,7 +436,7 @@ export function init(container) {
     saidaMix,
     h('p', {
       class: 'nota',
-      text: 'Mesma capacidade de reuso: mixin herda via prototype (instanceof funciona); factory fecha o estado em closure (sem instanceof).',
+      text: tr(STRINGS, 'note.mixin'),
     }),
   );
 
@@ -331,21 +449,23 @@ export function init(container) {
   const saidaSymbol = h('output', { class: 'saida', 'aria-live': 'polite' });
   const btnSymbol = h('button', {
     type: 'button',
-    text: 'Mostrar Symbol oculto',
+    text: tr(STRINGS, 'btn.showSymbol'),
     on: {
       click: () => {
         anexar(
           saidaSymbol,
           executar(() => {
             const objeto = {
-              nome: 'painel',
-              [METODO_INTERNO]: () => 'segredo',
+              nome: tr(STRINGS, 'symbol.name'),
+              [METODO_INTERNO]: () => tr(STRINGS, 'symbol.secret'),
             };
             return [
               `Object.keys: ${Object.keys(objeto).join(', ')}`,
               `JSON: ${JSON.stringify(objeto)}`,
-              `símbolos: ${Object.getOwnPropertySymbols(objeto).map(String).join(', ')}`,
-              `chamada interna: ${objeto[METODO_INTERNO]()}`,
+              tr(STRINGS, 'symbol.symbols', {
+                symbols: Object.getOwnPropertySymbols(objeto).map(String).join(', '),
+              }),
+              tr(STRINGS, 'symbol.internalCall', { resultado: objeto[METODO_INTERNO]() }),
             ].join(' · ');
           }),
         );
@@ -356,12 +476,12 @@ export function init(container) {
   const painelSymbol = h(
     'div',
     { class: 'linha' },
-    h('h3', { text: 'd) Symbol como chave oculta' }),
+    h('h3', { text: tr(STRINGS, 'symbol.title') }),
     h('div', { class: 'botoes' }, btnSymbol),
     saidaSymbol,
     h('p', {
       class: 'nota',
-      text: 'Object.getOwnPropertySymbols revela o que Object.keys e JSON escondem.',
+      text: tr(STRINGS, 'note.symbol'),
     }),
   );
 
@@ -375,7 +495,7 @@ export function init(container) {
     /** @returns {number} valor incrementado */
     inc() {
       const estado = dadosContador.get(this);
-      if (!estado) throw new Error('contador não inicializado');
+      if (!estado) throw new Error(tr(STRINGS, 'counter.notInitialized'));
       estado.valor += 1;
       return estado.valor;
     }
@@ -388,7 +508,7 @@ export function init(container) {
   const saidaWeak = h('output', { class: 'saida', 'aria-live': 'polite' });
   const btnWeak = h('button', {
     type: 'button',
-    text: 'Executar contador WeakMap',
+    text: tr(STRINGS, 'btn.runCounter'),
     on: {
       click: () => {
         anexar(
@@ -399,9 +519,9 @@ export function init(container) {
             contador.inc();
             contador.inc();
             return [
-              `valor: ${contador.valor}`,
-              `Object.keys: [${Object.keys(contador).join(', ')}] (nada vaza)`,
-              `WeakMap tem o estado: ${dadosContador.has(contador)}`,
+              tr(STRINGS, 'weak.value', { valor: contador.valor }),
+              tr(STRINGS, 'weak.keys', { keys: Object.keys(contador).join(', ') }),
+              tr(STRINGS, 'weak.hasState', { tem: String(dadosContador.has(contador)) }),
             ].join(' · ');
           }),
         );
@@ -412,12 +532,12 @@ export function init(container) {
   const painelWeak = h(
     'div',
     { class: 'linha' },
-    h('h3', { text: 'e) WeakMap: privacidade "à moda antiga"' }),
+    h('h3', { text: tr(STRINGS, 'panel.weak.title') }),
     h('div', { class: 'botoes' }, btnWeak),
     saidaWeak,
     h('p', {
       class: 'nota',
-      text: 'Comparado com # na seção (a): mesmo resultado — mas aqui o estado vive FORA do objeto e não aparece em Object.keys.',
+      text: tr(STRINGS, 'note.weak'),
     }),
   );
 
