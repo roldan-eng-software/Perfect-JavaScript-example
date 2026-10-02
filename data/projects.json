@@ -1,0 +1,58 @@
+{
+  "projects": [
+    {
+      "id": 1,
+      "name": "Orbit Dashboard",
+      "description": "Painel de métricas em tempo real com gráficos e alertas.",
+      "language": "JavaScript",
+      "stars": 128,
+      "updatedAt": "2026-08-14T10:30:00.000Z",
+      "tags": ["dashboard", "realtime", "charts"]
+    },
+    {
+      "id": 2,
+      "name": "FetchKit",
+      "description": "Biblioteca mínima de requisições com retry, cache e abort.",
+      "language": "JavaScript",
+      "stars": 87,
+      "updatedAt": "2026-06-02T18:00:00.000Z",
+      "tags": ["http", "retry", "fetch"]
+    },
+    {
+      "id": 3,
+      "name": "A11y Audit CLI",
+      "description": "Ferramenta de linha de comando para checagens de acessibilidade.",
+      "language": "TypeScript",
+      "stars": 245,
+      "updatedAt": "2026-09-21T09:15:00.000Z",
+      "tags": ["a11y", "cli", "audit"]
+    },
+    {
+      "id": 4,
+      "name": "Tiny Router",
+      "description": "Roteador SPA de 2KB com history API e lazy routes.",
+      "language": "JavaScript",
+      "stars": 54,
+      "updatedAt": "2026-03-30T14:45:00.000Z",
+      "tags": ["router", "spa", "tiny"]
+    },
+    {
+      "id": 5,
+      "name": "Intl Notes",
+      "description": "Coleção de receitas de internacionalização com Intl API.",
+      "language": "JavaScript",
+      "stars": 31,
+      "updatedAt": "2026-10-01T08:00:00.000Z",
+      "tags": ["i18n", "intl", "docs"]
+    },
+    {
+      "id": 6,
+      "name": "Worker Pool",
+      "description": "Pool de web workers com fila e balanceamento de carga.",
+      "language": "JavaScript",
+      "stars": 76,
+      "updatedAt": "2026-07-19T22:10:00.000Z",
+      "tags": ["workers", "performance", "pool"]
+    }
+  ]
+}

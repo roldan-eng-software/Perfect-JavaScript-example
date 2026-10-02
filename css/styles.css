@@ -1,0 +1,428 @@
+/*
+ * ARQUIVO: styles.css
+ * PROPÓSITO: estilos da landing — tema claro/escuro, layout responsivo e
+ *   classes utilitárias usadas pelas demos.
+ * CONCEITOS DEMONSTRADOS: CSS variables, dark mode via data-tema + prefers,
+ *   mobile-first, foco visível, prefers-reduced-motion.
+ * USADO EM: index.html (único stylesheet do projeto).
+ * COMPLEXIDADE/OBSERVAÇÕES: o CSS não é o foco do portfólio — mantido enxuto,
+ *   sem pré-processadores. Componentes com Shadow DOM estilizam a si mesmos.
+ */
+
+/* ─── Tokens de tema ─────────────────────────────────────────── */
+:root {
+  --cor-fundo: #f6f8fa;
+  --cor-superficie: #ffffff;
+  --cor-texto: #1f2328;
+  --cor-texto-sec: #57606a;
+  --cor-borda: #d0d7de;
+  --cor-acento: #0969da;
+  --cor-acento-fundo: #ddf4ff;
+  --cor-foco: #0969da;
+  --cor-erro: #b62324;
+  --cor-ok: #1a7f37;
+  --cor-fundo-codigo: #f6f8fa;
+  --cor-cabecalho: #eaeef2;
+  --sombra: 0 1px 3px rgb(0 0 0 / 0.08);
+  --fonte-corpo: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --fonte-codigo: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --largura-max: 76rem;
+}
+
+/* Tema escuro: atributo no <html> (aplicado pelo theme-toggle) */
+:root[data-tema='dark'] {
+  --cor-fundo: #0d1117;
+  --cor-superficie: #161b22;
+  --cor-texto: #e6edf3;
+  --cor-texto-sec: #8b949e;
+  --cor-borda: #30363d;
+  --cor-acento: #4493f8;
+  --cor-acento-fundo: #121d2f;
+  --cor-foco: #58a6ff;
+  --cor-erro: #f85149;
+  --cor-ok: #3fb950;
+  --cor-fundo-codigo: #0d1117;
+  --cor-cabecalho: #161b22;
+  --sombra: 0 1px 3px rgb(0 0 0 / 0.5);
+}
+
+/* Respeita quem prefere escuro no SO, sem escolha manual */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema='light']) {
+    --cor-fundo: #0d1117;
+    --cor-superficie: #161b22;
+    --cor-texto: #e6edf3;
+    --cor-texto-sec: #8b949e;
+    --cor-borda: #30363d;
+    --cor-acento: #4493f8;
+    --cor-acento-fundo: #121d2f;
+    --cor-foco: #58a6ff;
+    --cor-erro: #f85149;
+    --cor-ok: #3fb950;
+    --cor-fundo-codigo: #0d1117;
+    --cor-cabecalho: #161b22;
+    --sombra: 0 1px 3px rgb(0 0 0 / 0.5);
+  }
+}
+
+/* ─── Base ───────────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  /* Header fixo não cobre o destino da âncora */
+  scroll-padding-top: 4.5rem;
+}
+
+body {
+  margin: 0;
+  font-family: var(--fonte-corpo);
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--cor-texto);
+  background: var(--cor-fundo);
+}
+
+/* Foco visível em TODO interativo (WCAG 2.4.7) */
+:focus-visible {
+  outline: 3px solid var(--cor-foco);
+  outline-offset: 2px;
+}
+
+img {
+  max-width: 100%;
+}
+
+code {
+  font-family: var(--fonte-codigo);
+  font-size: 0.9em;
+  background: var(--cor-acento-fundo);
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+}
+
+a {
+  color: var(--cor-acento);
+}
+
+/* Sem animação para quem pediu menos movimento (WCAG 2.3.3) */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ─── Pular conteúdo (a11y) ──────────────────────────────────── */
+.pular-conteudo {
+  position: absolute;
+  inset-inline-start: -999px;
+  inset-block-start: 0;
+  background: var(--cor-acento);
+  color: #fff;
+  padding: 0.6rem 1rem;
+  z-index: 2000;
+}
+.pular-conteudo:focus {
+  inset-inline-start: 0;
+}
+
+/* ─── Header / menu ──────────────────────────────────────────── */
+.topo {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 100;
+  background: var(--cor-superficie);
+  border-block-end: 1px solid var(--cor-borda);
+  box-shadow: var(--sombra);
+}
+
+.topo nav {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: var(--largura-max);
+  margin-inline: auto;
+  padding: 0.6rem 1rem;
+  flex-wrap: wrap;
+}
+
+.marca {
+  font-weight: 800;
+  font-size: 1.05rem;
+  text-decoration: none;
+  color: var(--cor-texto);
+}
+.marca span {
+  color: var(--cor-acento);
+}
+
+.botao-menu {
+  margin-inline-start: auto;
+  font-size: 1.3rem;
+  line-height: 1;
+  padding: 0.35rem 0.6rem;
+  background: transparent;
+  color: var(--cor-texto);
+  border: 1px solid var(--cor-borda);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.menu {
+  display: none;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.menu.aberto {
+  display: flex;
+}
+.menu a {
+  display: block;
+  padding: 0.5rem 0.6rem;
+  text-decoration: none;
+  color: var(--cor-texto);
+  border-radius: 6px;
+  font-size: 0.92rem;
+}
+.menu a:hover {
+  background: var(--cor-acento-fundo);
+}
+.menu a[aria-current='true'] {
+  background: var(--cor-acento);
+  color: #fff;
+}
+
+/* ≥ 60rem: menu horizontal completo (desktop) */
+@media (min-width: 60rem) {
+  .botao-menu {
+    display: none;
+  }
+  .menu {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    width: auto;
+    flex: 1;
+    justify-content: center;
+    gap: 0.1rem;
+  }
+  .menu a {
+    font-size: 0.82rem;
+    padding: 0.4rem 0.5rem;
+  }
+}
+
+/* ─── Hero ───────────────────────────────────────────────────── */
+.hero {
+  max-width: var(--largura-max);
+  margin-inline: auto;
+  padding: clamp(2.5rem, 8vw, 5rem) 1rem 2rem;
+  text-align: center;
+}
+.hero h1 {
+  font-size: clamp(1.9rem, 6vw, 3.2rem);
+  margin: 0 0 0.75rem;
+  letter-spacing: -0.02em;
+}
+.hero-lead {
+  max-width: 46rem;
+  margin-inline: auto;
+  color: var(--cor-texto-sec);
+  font-size: clamp(1rem, 2.2vw, 1.15rem);
+}
+.hero-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-block: 1.25rem;
+}
+.selo {
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  background: var(--cor-acento-fundo);
+  color: var(--cor-acento);
+  border: 1px solid var(--cor-borda);
+}
+.hero-contador {
+  font-family: var(--fonte-codigo);
+  color: var(--cor-texto-sec);
+}
+.hero-contador output {
+  font-weight: 700;
+  color: var(--cor-acento);
+}
+
+.botao {
+  display: inline-block;
+  font: 600 0.95rem/1 var(--fonte-corpo);
+  padding: 0.7rem 1.3rem;
+  border-radius: 8px;
+  border: 1px solid var(--cor-borda);
+  background: var(--cor-superficie);
+  color: var(--cor-texto);
+  cursor: pointer;
+  text-decoration: none;
+}
+.botao.primario {
+  background: var(--cor-acento);
+  border-color: var(--cor-acento);
+  color: #fff;
+}
+.botao:hover {
+  filter: brightness(1.08);
+}
+
+/* ─── Conteúdo / demos ───────────────────────────────────────── */
+main {
+  max-width: var(--largura-max);
+  margin-inline: auto;
+  padding-inline: 1rem;
+}
+
+.area-demo {
+  min-height: 2rem;
+}
+
+/* Classes utilitárias compartilhadas pelas demos */
+.linha {
+  margin-block: 1rem;
+}
+.linha h3 {
+  font-size: 1rem;
+  margin-block: 0.6rem 0.4rem;
+}
+.botoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+.grade {
+  display: grid;
+  gap: 0.6rem;
+}
+@media (min-width: 40rem) {
+  .grade {
+    grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  }
+}
+.nota {
+  font-size: 0.85rem;
+  color: var(--cor-texto-sec);
+  margin-block: 0.4rem;
+}
+.nota.erro {
+  color: var(--cor-erro);
+  font-weight: 600;
+}
+.botoes button,
+button.acao {
+  font: 500 0.88rem/1 var(--fonte-corpo);
+  padding: 0.5rem 0.85rem;
+  border-radius: 7px;
+  border: 1px solid var(--cor-borda);
+  background: var(--cor-superficie);
+  color: var(--cor-texto);
+  cursor: pointer;
+}
+.botoes button:hover,
+button.acao:hover {
+  border-color: var(--cor-acento);
+}
+input,
+select,
+textarea {
+  font: inherit;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--cor-borda);
+  border-radius: 7px;
+  background: var(--cor-superficie);
+  color: var(--cor-texto);
+  max-width: 100%;
+}
+output {
+  font-family: var(--fonte-codigo);
+  font-size: 0.9em;
+}
+
+/* ─── Seções informativas ────────────────────────────────────── */
+.secao-informativa {
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: 12px;
+  padding: clamp(1rem, 3vw, 1.75rem);
+  margin-block: 1.5rem;
+}
+.secao-informativa h2 {
+  margin-block: 0 0.5rem;
+}
+.lista-testes,
+.lista-modulos {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+.lista-testes li,
+.lista-modulos li {
+  padding: 0.4rem 0.6rem;
+  border-inline-start: 3px solid var(--cor-acento);
+  background: var(--cor-fundo);
+  border-radius: 0 6px 6px 0;
+  font-size: 0.92rem;
+}
+.lista-modulos a {
+  font-weight: 600;
+}
+
+/* ─── Rodapé ─────────────────────────────────────────────────── */
+.rodape {
+  margin-block-start: 3rem;
+  padding: 1.5rem 1rem;
+  border-block-start: 1px solid var(--cor-borda);
+  text-align: center;
+  color: var(--cor-texto-sec);
+  font-size: 0.9rem;
+}
+.rodape-nota {
+  font-size: 0.8rem;
+}
+
+/* ─── Utilidades de demo (reveal etc.) ───────────────────────── */
+.visivel {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 0.4s ease,
+    transform 0.4s ease;
+}
+.nao-visivel {
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .visivel,
+  .nao-visivel {
+    transition: none;
+    transform: none;
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "quotes": [
+    {
+      "id": 1,
+      "text": "Simplicidade é a alma da eficiência.",
+      "author": "Austin Freeman",
+      "lang": "pt-BR"
+    },
+    {
+      "id": 2,
+      "text": "Premature optimization is the root of all evil.",
+      "author": "Donald Knuth",
+      "lang": "en-US"
+    },
+    {
+      "id": 3,
+      "text": "Teste primeiro, otimize depois, comprove sempre.",
+      "author": "Kent Beck",
+      "lang": "pt-BR"
+    },
+    {
+      "id": 4,
+      "text": "Any fool can write code that a computer can understand.",
+      "author": "Martin Fowler",
+      "lang": "en-US"
+    },
+    {
+      "id": 5,
+      "text": "O código que você não escreveu não precisa ser mantido.",
+      "author": "Anônimo",
+      "lang": "pt-BR"
+    },
+    {
+      "id": 6,
+      "text": "Make it work, make it right, make it fast.",
+      "author": "Kent Beck",
+      "lang": "en-US"
+    },
+    {
+      "id": 7,
+      "text": "Um bug invisível custa mais que um teste esquecido.",
+      "author": "Anônimo",
+      "lang": "pt-BR"
+    },
+    {
+      "id": 8,
+      "text": "Simplicity is prerequisite for reliability.",
+      "author": "Edsger Dijkstra",
+      "lang": "en-US"
+    }
+  ]
+}

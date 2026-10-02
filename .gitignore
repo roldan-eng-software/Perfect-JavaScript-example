@@ -1,0 +1,22 @@
+# Dependências (apenas devDependencies são instaladas)
+node_modules/
+
+# Saídas de cobertura e relatórios
+coverage/
+*.log
+npm-debug.log*
+
+# Artefatos de editores e sistema
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Cache
+.eslintcache
+.cache/
+
+# Skills/configurações do ambiente Claude Code (não são parte do projeto)
+.claude/
