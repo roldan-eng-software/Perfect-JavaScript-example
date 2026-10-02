@@ -5,7 +5,7 @@
 [![Zero dependências](https://img.shields.io/badge/dependências-runtime-0-brightgreen.svg)](#decisões-técnicas)
 [![Testes](https://img.shields.io/badge/testes-node%3Atest-2080FF.svg)](#como-rodar-os-testes)
 
-**🚀 Demo ao vivo (GitHub Pages):** `https://TODO.github.io/Perfect-JavaScript-example/`
+**🚀 Demo ao vivo (GitHub Pages):** `https://roldan-eng-software.github.io/Perfect-JavaScript-example/`
 
 ![Screenshot / GIF do projeto](docs/screenshot-placeholder.gif)
 
@@ -103,7 +103,7 @@ Detalhes no [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 ## Como rodar
 
 ```bash
-git clone https://github.com/TODO/Perfect-JavaScript-example.git
+git clone https://github.com/roldan-eng-software/Perfect-JavaScript-example.git
 cd Perfect-JavaScript-example
 npm install        # só devDependencies (ESLint + Prettier)
 npm run serve      # http://localhost:5173
@@ -146,9 +146,10 @@ do `<code-peek>`.
 
 **Roldan Eng Software** — Engenheiro de Software focado em Front-end.
 
-- 🔗 GitHub: `https://github.com/TODO` _(TODO)_
-- 💼 LinkedIn: `https://linkedin.com/in/TODO` _(TODO)_
-- 📧 E-mail: `TODO@example.com` _(TODO)_
+- 🌐 Website: `https://chegounaweb.vercel.app/`
+- 🔗 GitHub: `https://github.com/roldan-eng-software`
+- 💼 LinkedIn: `https://www.linkedin.com/in/sandro-roldan-b8721a3b5`
+- 📧 E-mail: `roldan.eng.software@gmail.com`
 
 ## Licença
 
